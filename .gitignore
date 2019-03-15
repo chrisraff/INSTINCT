@@ -1,2 +1,5 @@
 __pycache__/*
 *.pickle
+
+!default GA linearBias params.pickle
+!default track.pickle
