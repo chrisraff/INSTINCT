@@ -64,7 +64,7 @@ class Car:
         self.dir += degreesToChange
         self.speed -= abs(degreesToChange * self.steeringSpeedLoss)
         
-        if self.lapData is not None: self.lapData.update()
+        if self.lapData is not None: return self.lapData.update()
         
 
     def getSteeringThreshold(self):
