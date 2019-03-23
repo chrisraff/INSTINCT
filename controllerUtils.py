@@ -1,3 +1,22 @@
+# this file contains general functions used by controllers to perceive the track
+from numpy import linspace, sin, cos, pi
+
+
+# 
+def getDistanceReadings(car, track, numDistSensors):
+    percepts = [0] * numDistSensors
+
+    for i, n in enumerate(linspace(-pi/2, pi/2, numDistSensors)):
+        nearest = float('inf')
+        for l in track.trackLines:
+            t = intersectsAt((car.x, car.y), (cos(car.dir+n), sin(car.dir+n)), l)
+            if t > 0 and t < nearest:
+                nearest = t
+        percepts[i] = nearest
+
+    return percepts
+
+
 # functions used in line intersection calculation
 def mag(v):
     return (v[0]**2 + v[1]**2)**0.5
