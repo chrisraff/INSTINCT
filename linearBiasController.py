@@ -1,7 +1,7 @@
 import car
 import numpy as np
 from math import sin, cos, pi, exp
-from controllerUtils import *
+from controllerUtils import intersectsAt
 
 
 class linearBiasController:
@@ -25,16 +25,16 @@ class linearBiasController:
         
     def update(self):
         # controller logic goes here
-        percept = 0
-        for n in np.linspace(-pi/2, pi/2, self.numDistSensors):
+        
+        for i, n in enumerate(np.linspace(-pi/2, pi/2, self.numDistSensors)):
             nearest = float('inf')
             for l in self.track.trackLines:
                 t = intersectsAt((self.myCar.x, self.myCar.y), (cos(self.myCar.dir+n), sin(self.myCar.dir+n)), l)
                 if t > 0 and t < nearest:
                     nearest = t
-            self.percepts[percept] = nearest
-            percept += 1
-        self.percepts[percept] = self.myCar.speed
+            self.percepts[i] = nearest
+
+        self.percepts[-1] = self.myCar.speed
         
         steering = np.dot(self.steeringWeights, self.percepts) + self.steeringBias
         thrust   = np.dot(self.thrustWeights, self.percepts) + self.thrustBias
