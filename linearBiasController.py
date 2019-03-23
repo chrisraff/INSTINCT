@@ -2,6 +2,7 @@ import car
 import numpy as np
 from math import sin, cos, pi, exp
 
+
 class linearBiasController:
     def __init__(self, track = None, steeringWeights = None, thrustWeights = None, steeringBias = 0.0, thrustBias = 0.0):
         self.myCar = car.Car(0.0, 0.0, track)
@@ -68,6 +69,7 @@ def dot(a, b):
     return a[0]*b[0] + a[1]*b[1]
 def comp(a, b): # project a onto b (assumes b has unit length)
     return dot(a, b)/(b[0]**2 + b[1]**2)
+
 
 # takes a point (2d), a direction (2d), and a track.Line
 def intersectsAt(p, d, l):

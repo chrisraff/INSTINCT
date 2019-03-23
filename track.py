@@ -84,7 +84,7 @@ class LapData:
             ret += [dist]
         return ret
         
-        
+
     #def resetLapTime(self)
     #    self.startTime = time()
     def newLap(self):

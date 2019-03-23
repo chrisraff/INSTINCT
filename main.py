@@ -4,6 +4,7 @@ from matplotlib.animation import FuncAnimation
 import pickle
 import linearBiasController
 
+
 fig, ax = plt.subplots()
 
 car_line, = plt.plot([0], [0], color='red', animated=True)
@@ -20,6 +21,7 @@ gaController = linearBiasController.linearBiasController(track, gaParams[0][0], 
 controllers = [ gaController ]
 
 focus_car = controllers[0].myCar
+
 
 def init():
     ax.set_xlim(-250, 250)
