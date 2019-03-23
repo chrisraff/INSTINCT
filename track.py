@@ -6,10 +6,11 @@ class Track:
         self.trackLines = [] # array of lines that correspond with loops for intersection checking
         self.sectors = [] # array of lines
         self.start = Line((10, -48), (10, 48))
-        self.checkpoints = [] # array of checkpoints (x, y, r)
+        self.checkpoints = [] # array of checkpoints (x, y, r). This should be changed to an array of lines
         
         # self.showCheckpoints = True
         
+
     def updateTrackLines(self):
         self.trackLines = []
         for l in self.loop:
@@ -51,11 +52,13 @@ class Line:
     def __init__(self, p0, p1):
         self.p = [p0, p1]
         
+
     # Return true if line segments l0 and l1 intersect (ignores colinearity)
     def intersect(self, l1):
         def ccw(A,B,C):
             return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
         return ccw(self.p[0],l1.p[0],l1.p[1]) != ccw(self.p[1],l1.p[0],l1.p[1]) and ccw(self.p[0],self.p[1],l1.p[0]) != ccw(self.p[0],self.p[1],l1.p[1])
+
 
 # from time import time #if I want simulated (not rendered) results to work, I need the framework to keep track of time and then I can make a call to it to ask for the time differences    
 class LapData:
@@ -70,6 +73,8 @@ class LapData:
         self.car = car
         self.startTime = 0 # the current lap's start time
         self.time = 0
+
+
     def initCheckpointDists(self):
         ret = []
         for n in range(self.numCheckpoints):
@@ -78,6 +83,7 @@ class LapData:
             dist = ((c0[0]-c1[0])**2 + (c0[1]-c1[1])**2)**0.5
             ret += [dist]
         return ret
+        
         
     #def resetLapTime(self)
     #    self.startTime = time()
@@ -88,6 +94,8 @@ class LapData:
             print(self.laps)
         self.startTime = self.time
         self.nextCheckpoint = 0
+
+
     def update(self):
         self.time += 1/60.0
         if self.numCheckpoints > self.nextCheckpoint:
@@ -98,6 +106,7 @@ class LapData:
         # always check for intersection with the start line so a lap can be reset even if some checkpoints were missed
         if (self.car.getMotionLine().intersect(self.track.start)):
             self.newLap()
+            
             
     def getDistanceToNextCheckpoint(self):
         cid = self.nextCheckpoint % self.numCheckpoints
@@ -115,6 +124,7 @@ class Editor:
         self.track = track
         self.checkpointClickState = True
         
+
     def keyboardFunc(self, key, x, y):
         # consider putting some lock that prevents changing the mode until 'edit mode' has been enabled
         if key in '0123456789' and self.checkpointClickState:
@@ -125,6 +135,7 @@ class Editor:
             pickle.dump(self.track, open('track', 'w'))
         # l loads
     
+
     def passiveMotionFunc(self, x, y):#currently unused
         if (self.mode == 3 and not self.checkpointClickState):
             cid = len(self.track.checkpoints)-1

@@ -59,11 +59,18 @@ class linearBiasController:
     #     glEnd()
         
     #     self.myCar.displayFunc()
-        
+
+
+# functions used in line intersection calculation
+def mag(v):
+    return (v[0]**2 + v[1]**2)**0.5
+def dot(a, b):
+    return a[0]*b[0] + a[1]*b[1]
+def comp(a, b): # project a onto b (assumes b has unit length)
+    return dot(a, b)/(b[0]**2 + b[1]**2)
+
 # takes a point (2d), a direction (2d), and a track.Line
 def intersectsAt(p, d, l):
-    def mag(v):
-        return (v[0]**2 + v[1]**2)**0.5
     # normalize d
     ddenom = mag(d)
     d = (d[0]/ddenom, d[1]/ddenom)
@@ -75,8 +82,6 @@ def intersectsAt(p, d, l):
     lN = (-lY/llength, lX/llength)
     
     # calculate t
-    def dot(a, b):
-        return a[0]*b[0] + a[1]*b[1]
     disp = (l.p[0][0] - p[0], l.p[0][1] - p[1])
     denom = dot(d, lN)
     if denom == 0:
@@ -87,8 +92,7 @@ def intersectsAt(p, d, l):
     '''def proj(a, b): # project a onto b
         dist = dot(a, b)/(b[0]**2 + b[1]**2)
         return (b[0]*dist, b[1]*dist)'''
-    def comp(a, b): # project a onto b (assumes b has unit length)
-        return dot(a, b)/(b[0]**2 + b[1]**2)
+    
     '''p0p = proj(disp, d)
     p1p = proj((disp[0] - lX, disp[1] - lY), d)'''
     # p0p = mag(proj((l.p[0][0] - p[0], l.p[0][1] - p[1]), d))

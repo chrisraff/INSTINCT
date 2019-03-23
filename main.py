@@ -26,6 +26,7 @@ def init():
     ax.set_ylim(-250, 250)
     return [track_line_0, track_line_1, car_line]
 
+
 def update(frame):
 
     for controller in controllers:
@@ -51,6 +52,7 @@ def update(frame):
     track_line_1.set_data(track_line_1_x, track_line_1_y)
 
     return [track_line_0, track_line_1, car_line]
+
 
 ftime = 1000/60 # delay between frames in milliseconds
 

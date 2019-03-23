@@ -25,10 +25,12 @@ class Car:
         
         self.offRoad = False
     
+
     def initLapData(self):
         #if self.lapData is None:
         self.lapData = LapData(self)
     
+
     def update(self):
 
         self.enforceInputBoundaries()
@@ -64,19 +66,23 @@ class Car:
         
         if self.lapData is not None: self.lapData.update()
         
+
     def getSteeringThreshold(self):
         return 1.125 - 0.2 * abs(self.speed + self.throttle/2.5 - self.brake/3)
         #return 3.0* self.speed / (1.0 + abs(self.throttle+self.brake)) # maybe try e^-x stuff
         
+
     def getMotionLine(self):
         return Line((self.prevX, self.prevY), (self.x, self.y))
     
+
     def enforceInputBoundaries(self):
         def clamp(my_value, min_value, max_value):
             return max(min(my_value, max_value), min_value)
         self.throttle = clamp(self.throttle, 0.0, 1.0)
         self.brake = clamp(self.brake, 0.0, 1.0)
         self.steering = clamp(self.steering, -1.0, 1.0)
+    
     
     # def displayFunc(self):
     #     glBegin(GL_LINE_STRIP)
