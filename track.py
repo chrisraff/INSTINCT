@@ -62,6 +62,10 @@ class Line:
 
 # from time import time #if I want simulated (not rendered) results to work, I need the framework to keep track of time and then I can make a call to it to ask for the time differences    
 class LapData:
+    NOTHING = 0
+    CHECKPOINT = 1
+    INVALID_LAP = 2
+
     # car: The car that the lapData will record data for
     def __init__(self, car):
         self.laps = [] # array of times
@@ -85,27 +89,36 @@ class LapData:
         return ret
         
 
-    #def resetLapTime(self)
-    #    self.startTime = time()
+    # returns True if the lap was valid
     def newLap(self):
     # if all checkpoints hit (lap is valid)
-        if self.nextCheckpoint == self.numCheckpoints:
+        valid = self.nextCheckpoint == self.numCheckpoints
+        if valid:
             self.laps += [self.time - self.startTime]
             print(self.laps)
         self.startTime = self.time
         self.nextCheckpoint = 0
 
+        return valid
 
+
+    # returns the result of the update
     def update(self):
+        result = LapData.NOTHING
+
         self.time += 1/60.0
         if self.numCheckpoints > self.nextCheckpoint:
             c = self.track.checkpoints[self.nextCheckpoint]
             if (self.car.x - c[0])**2 + (self.car.y - c[1])**2 <= c[2]**2:
                 # print('checkpoint {}'.format(self.nextCheckpoint))
-                self.nextCheckpoint+=1
+                self.nextCheckpoint+=1 
+
+                result = LapData.CHECKPOINT
         # always check for intersection with the start line so a lap can be reset even if some checkpoints were missed
         if (self.car.getMotionLine().intersect(self.track.start)):
-            self.newLap()
+            result = LapData.CHECKPOINT if self.newLap() else LapData.INVALID_LAP
+        
+        return result
             
             
     def getDistanceToNextCheckpoint(self):
