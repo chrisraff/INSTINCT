@@ -122,7 +122,7 @@ def main():
     # plt.show()
 
     # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(3, 5)8
+    f, axes = plt.subplots(3, 5)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     for ax_row in axes:
