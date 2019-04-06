@@ -85,10 +85,21 @@ def make_track():
 
 
 def main():
-    track_points, control_points = make_track()
-    plt.plot(track_points[0], track_points[1])
-    plt.show()
+    # track_points, control_points = make_track()
+    # plt.plot(track_points[0], track_points[1])
+    # plt.show()
 
+    # plot lots of tracks to get a better idea of the results
+    f, axes = plt.subplots(4, 8)
+    f.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    for ax_row in axes:
+        for ax in ax_row:
+            track_points, control_points = make_track()
+            ax.scatter(control_points[:,0], control_points[:,1], c='r')
+            ax.plot(track_points[:,0], track_points[:,1], c='b')
+            ax.axis('equal')  # preserve aspect ratio
+            ax.axis('off')
+    plt.show()
 
 if __name__ == "__main__":
     main()
