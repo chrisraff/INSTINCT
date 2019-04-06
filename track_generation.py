@@ -1,7 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-import math as m
+from math import *
 from scipy.interpolate import interp1d
 from scipy import interpolate
 
@@ -9,11 +9,11 @@ from scipy import interpolate
 def createCircle():
     n = 10 # number of points
     points = np.zeros((n,2))
-    # theta = np.linspace(2*m.pi/n, 2*m.pi, n)
-    theta = np.linspace(0, 2*m.pi, n)
+    # theta = np.linspace(2*pi/n, 2*pi, n)
+    theta = np.linspace(0, 2*pi, num=n, endpoint=False)
 
     for i in range(n):
-        points[i,:] = [m.cos(theta[i]), m.sin(theta[i])]
+        points[i,:] = [cos(theta[i]), sin(theta[i])]
 
     return points
 
@@ -27,12 +27,16 @@ def plotPoints(points):
             plt.plot((points[i][0], points[i+1][0]), (points[i][1], points[i+1][1]), 'bo-' )
         else:
             plt.plot((points[i][0], points[0][0]), (points[i][1], points[0][1]), 'bo-' )
- 
+
         # plt.pause(0.1)
-    plt.show()
+    # plt.show()
     return
 
 def alterPoints(points):
+
+    # should
+    theta = np.arctan2(points[:,1], points[:,0])
+
     noise = np.random.uniform(-0.5, 0.5, len(points)*2).reshape(points.shape)
     newpoints = points + noise
     newpoints[-1,:] = newpoints[0,:]
@@ -45,24 +49,22 @@ def alterPoints(points):
 
 
 def main():
-    
+
     points = createCircle()
     # plotPoints(points)
     newpoints = alterPoints(points)
+    plotPoints(newpoints)
 
-    tck, u = interpolate.splprep([newpoints[:,0], newpoints[:,1]], s=0)
-    unew = np.arange(0, 1.01, 0.01)
-    out = interpolate.splev(unew, tck)
+    num_output_points = 1000
+
+    # https://stackoverflow.com/questions/33962717/interpolating-a-closed-curve-using-scipy
+    tck, _ = interpolate.splprep([newpoints[:,0], newpoints[:,1]], s=0, per=True)
+    out = interpolate.splev(np.linspace(0, 1, num_output_points), tck)
 
 
     plt.plot(out[0], out[1])
     plt.show()
 
-
-
-    
-
-    
 
 
 if __name__ == "__main__":
