@@ -109,12 +109,12 @@ def make_track():
     left_track[0] = left_track[-1]
     right_track[0] = right_track[-1]
 
-    return track_points, control_points, left_track, right_track
+    return control_points, track_points, left_track, right_track
 
 
 def main():
     # # plot one track for debugging
-    # track_points, control_points, left_track, right_track = make_track()
+    # control_points, track_points, left_track, right_track = make_track()
     # plt.plot(left_track[:,0], left_track[:,1])
     # plt.plot(right_track[:,0], right_track[:,1])
     # # plt.plot(track_points[:,0], track_points[:,1])
@@ -127,7 +127,7 @@ def main():
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     for ax_row in axes:
         for ax in ax_row:
-            track_points, control_points, left_track, right_track = make_track()
+            control_points, track_points, left_track, right_track = make_track()
             ax.scatter(control_points[:,0], control_points[:,1], c='r')
 
             ax.plot(left_track[:,0], left_track[:,1], c='g')
