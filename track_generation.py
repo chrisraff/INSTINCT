@@ -9,7 +9,7 @@ from numpy.linalg import norm
 # np.random.seed(3)
 
 def createCircle():
-    n = 8 # number of points
+    n = 12 # number of points
 
     #note that we need to make an extra point because the last one has to be set to the same as the first
     points = np.zeros((n+1,2))
