@@ -136,8 +136,22 @@ def find_intersections(control_points, track_points, left_track, right_track):
             D = right_track[j]
 
             has_intersection = lines_intersect(A, B, C, D)
+            if has_intersection and i != 1:
+                # print("found left-right intersection at i={}".format(i))
+                # plt.plot(A[0], A[1], 'bo-', alpha=0.5)
+                # plt.plot(B[0], B[1], 'bo-', alpha=0.5)
+                # plt.plot(C[0], C[1], 'yo-', alpha=0.5)
+                # plt.plot(D[0], D[1], 'yo-', alpha=0.5)
+                return True
+
+        # may need to optimize length of this inner loop if the generator is too slow
+        for j in range(i-len(left_track)//2,i-2):
+            C = left_track[j-1]
+            D = left_track[j]
+
+            has_intersection = lines_intersect(A, B, C, D)
             if has_intersection:
-                # print("found intersection at i={}".format(i))
+                # print("found left-left intersection at i={}".format(i))
                 # plt.plot(A[0], A[1], 'bo-', alpha=0.5)
                 # plt.plot(B[0], B[1], 'bo-', alpha=0.5)
                 # plt.plot(C[0], C[1], 'yo-', alpha=0.5)
@@ -163,10 +177,14 @@ def main():
     f, axes = plt.subplots(5, 8)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    track_num = 0
     for ax_row in axes:
         for ax in ax_row:
+            track_num += 1
+            print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
             track_data = make_track()
             while find_intersections(*track_data):
+                print("  rejecting track")
                 track_data = make_track()
             control_points, track_points, left_track, right_track = track_data
             ax.scatter(control_points[:,0], control_points[:,1], c='r')
