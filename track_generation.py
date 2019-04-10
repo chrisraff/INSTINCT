@@ -2,18 +2,20 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from math import *
-from scipy.interpolate import interp1d
+# from scipy.interpolate import interp1d
 from scipy import interpolate
 from numpy.linalg import norm
 
+# np.random.seed(3)
 
 def createCircle():
-    n = 10 # number of points
-    points = np.zeros((n,2))
-    # theta = np.linspace(2*pi/n, 2*pi, n)
-    theta = np.linspace(0, 2*pi, num=n, endpoint=False)
+    n = 8 # number of points
 
-    for i in range(n):
+    #note that we need to make an extra point because the last one has to be set to the same as the first
+    points = np.zeros((n+1,2))
+    theta = np.linspace(0, 2*pi, num=n+1, endpoint=True)
+
+    for i in range(n+1):
         points[i,:] = [cos(theta[i]), sin(theta[i])]
 
     return points
@@ -63,18 +65,15 @@ def alterPoints(points):
     control_points[:,0] += dr*np.cos(dt)
     control_points[:,1] += dr*np.sin(dt)
 
-
-
-    # control_points[-1,:] = control_points[0,:]  # not sure why this line is needed
-
-    # print(points)
-    # print(points + noise)
+    control_points[-1,:] = control_points[0,:]  # this is required by the interpolation functions
+    # print(control_points)
+    # print(control_points + noise)
 
     return control_points
 
 
 def make_track():
-    num_output_points = 1000
+    num_output_points = 50
     track_width = 0.05
 
 
@@ -116,22 +115,60 @@ def make_track():
     return control_points, track_points, left_track, right_track
 
 
+def find_intersections(control_points, track_points, left_track, right_track):
+
+    # https://stackoverflow.com/a/9997374/2230446
+    def ccw(A,B,C):
+        return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+    # Return true if line segments AB and CD intersect
+    def lines_intersect(A,B,C,D):
+        return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
+    from tqdm import trange
+    for i in range(len(left_track)):
+        A = left_track[i-1]
+        B = left_track[i]
+
+        # may need to optimize length of this inner loop if the generator is too slow
+        for j in range(len(right_track)):
+            C = right_track[j-1]
+            D = right_track[j]
+
+            has_intersection = lines_intersect(A, B, C, D)
+            if has_intersection:
+                # print("found intersection at i={}".format(i))
+                # plt.plot(A[0], A[1], 'bo-', alpha=0.5)
+                # plt.plot(B[0], B[1], 'bo-', alpha=0.5)
+                # plt.plot(C[0], C[1], 'yo-', alpha=0.5)
+                # plt.plot(D[0], D[1], 'yo-', alpha=0.5)
+                return True
+
+    return False
+
+
 def main():
     # # plot one track for debugging
     # control_points, track_points, left_track, right_track = make_track()
+    # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
+    # print("has_intersection: {}".format(has_intersection))
     # plt.plot(left_track[:,0], left_track[:,1])
     # plt.plot(right_track[:,0], right_track[:,1])
+    # plt.scatter(control_points[:,0], control_points[:,1], color='r')
     # # plt.plot(track_points[:,0], track_points[:,1])
     # plt.axis('equal')
     # plt.show()
 
     # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(3, 5)
+    f, axes = plt.subplots(5, 8)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     for ax_row in axes:
         for ax in ax_row:
-            control_points, track_points, left_track, right_track = make_track()
+            track_data = make_track()
+            while find_intersections(*track_data):
+                track_data = make_track()
+            control_points, track_points, left_track, right_track = track_data
             ax.scatter(control_points[:,0], control_points[:,1], c='r')
 
             ax.plot(left_track[:,0], left_track[:,1], c='g')
