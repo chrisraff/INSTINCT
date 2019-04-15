@@ -144,7 +144,7 @@ def nudge_points(control_points, track_points, left_track, right_track):
             break
 
         # check for intersections between the left and right tracks
-        for i in range(len(left_track)):
+        for i in trange(len(left_track)):
             A = left_track[i]
 
             # may need to optimize length of this inner loop if the generator is too slow
@@ -152,16 +152,21 @@ def nudge_points(control_points, track_points, left_track, right_track):
                 B = right_track[j-1]
                 C = right_track[j]
 
-            # "2*" is for DEBUGGING ONLY
-            dist_to_track = point_line_dist(B, C, A)
-            if dist_to_track < track_width:
-                points_are_too_close = True
-                print("NUDGING i={} j={}".format(i, j))
-                nudge_direction = perp(C-B)
-                nudge_direction = nudge_direction*0.5*(track_width-dist_to_track)/norm(nudge_direction)
-                plt.scatter([left_track[i][0]], [left_track[i][1]], c='k')
-                left_track[i] += nudge_direction
-                pass
+                # "2*" is for DEBUGGING ONLY
+                dist_to_track = point_line_dist(B, C, A)
+                # print(dist_to_track)
+                if dist_to_track < track_width:
+                    # points_are_too_close = True
+                    # print("NUDGING i={} j={}".format(i, j))
+                    nudge_direction = perp(C-B)
+                    nudge_direction = nudge_direction/norm(nudge_direction)
+                    # print(nudge_direction)
+                    # plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
+                    # plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
+                    # plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
+
+                    left_track[i] += 1.0*(track_width-dist_to_track)*nudge_direction
+                    pass
 
     pass
 
