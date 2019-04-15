@@ -8,20 +8,36 @@ from numpy.linalg import norm
 
 np.random.seed(6)
 
-def createCircle():
-    n = 12 # number of points
+# track settings
+num_control_points = 12
+num_track_points = 100
+track_width = 0.1
 
+# randomization settings
+max_uniform_delta_radius = 0.4
+max_contract_distance = -0.2
+max_expand_distance = 0.5
+
+
+# get perpendicular vector to input vector a
+def perp( a ) :
+    b = np.empty_like(a)
+    b[0] = -a[1]
+    b[1] = a[0]
+    return b
+
+def create_circle():
     #note that we need to make an extra point because the last one has to be set to the same as the first
-    points = np.zeros((n+1,2))
-    theta = np.linspace(0, 2*pi, num=n+1, endpoint=True)
+    points = np.zeros((num_control_points+1,2))
+    theta = np.linspace(0, 2*pi, num=num_control_points+1, endpoint=True)
 
-    for i in range(n+1):
+    for i in range(num_control_points+1):
         points[i,:] = [cos(theta[i]), sin(theta[i])]
 
     return points
 
 
-def plotPoints(points):
+def plot_points(points):
     plt.figure(num=None, figsize=(8, 8), dpi=80, facecolor='w', edgecolor='k')
     plt.xlim(-2.0, 2.0)
     plt.ylim(-2.0, 2.0)
@@ -37,13 +53,9 @@ def plotPoints(points):
     return
 
 
-def alterPoints(points):
+def alter_points(points):
     control_points = np.copy(points)
     theta = np.arctan2(points[:,1], points[:,0])
-
-    max_uniform_delta_radius = 0.4
-    max_contract_distance = -0.2
-    max_expand_distance = 0.5
 
     # push the points in and out away from the center of the circle
     # delta_distance = np.random.uniform(-max_contract_distance, max_expand_distance, len(points))
@@ -73,18 +85,14 @@ def alterPoints(points):
 
 
 def make_track():
-    num_output_points = 100
-    track_width = 0.05
-
-
-    points = createCircle()
-    # plotPoints(points)
-    control_points = alterPoints(points)
-    # plotPoints(control_points)
+    points = create_circle()
+    # plot_points(points)
+    control_points = alter_points(points)
+    # plot_points(control_points)
 
     # https://stackoverflow.com/questions/33962717/interpolating-a-closed-curve-using-scipy
     tck, _ = interpolate.splprep(control_points.T, s=0, per=True)
-    track_points = interpolate.splev(np.linspace(0, 1, num_output_points), tck)
+    track_points = interpolate.splev(np.linspace(0, 1, num_track_points), tck)
     track_points = np.array(track_points).T
 
     # get the left and right sides of the track
@@ -95,15 +103,15 @@ def make_track():
         p0 = track_points[i-2]
         p1 = track_points[i-1]
         p2 = track_points[i]
-        # v = p2-p1  # forward
-        v = ((p1-p0)+(p2-p1))/2  # vector averaging for more smoothness
+        v = p2-p1  # forward
+        # v = ((p1-p0)+(p2-p1))/2  # vector averaging for more smoothness
 
 
-        delta_left = np.array([-v[1], v[0]])
-        delta_left = track_width * delta_left / norm(delta_left)
+        delta_left = perp(v)
+        delta_left = track_width/2 * delta_left / norm(delta_left)
 
-        delta_right = np.array([v[1], -v[0]])
-        delta_right = track_width * delta_right / norm(delta_right)
+        delta_right = -perp(v)
+        delta_right = track_width/2 * delta_right / norm(delta_right)
 
         left_track += [delta_left]
         right_track += [delta_right]
@@ -118,15 +126,47 @@ def make_track():
     return control_points, track_points, left_track, right_track
 
 
+def nudge_points(control_points, track_points, left_track, right_track):
+
+    # returns the distance from point p to the line segment denoted by the two points l0 and l1
+    # https://stackoverflow.com/a/39840218/2230446
+    # def point_line_dist(p, line_start, line_end):
+    #     return norm(np.cross(line_end-line_start, line_start-p))/norm(line_end-line_start)
+    def point_line_dist(p1, p2, p3):
+        return np.abs(norm(np.cross(p2-p1, p1-p3))/norm(p2-p1))
+
+    points_are_too_close = True
+    attempts = 0
+    while(points_are_too_close):
+        points_are_too_close = False
+        attempts += 1
+        if attempts > 40:
+            break
+
+        # check for intersections between the left and right tracks
+        for i in range(len(left_track)):
+            A = left_track[i]
+
+            # may need to optimize length of this inner loop if the generator is too slow
+            for j in range(len(right_track)):
+                B = right_track[j-1]
+                C = right_track[j]
+
+            # "2*" is for DEBUGGING ONLY
+            dist_to_track = point_line_dist(B, C, A)
+            if dist_to_track < track_width:
+                points_are_too_close = True
+                print("NUDGING i={} j={}".format(i, j))
+                nudge_direction = perp(C-B)
+                nudge_direction = nudge_direction*0.5*(track_width-dist_to_track)/norm(nudge_direction)
+                plt.scatter([left_track[i][0]], [left_track[i][1]], c='k')
+                left_track[i] += nudge_direction
+                pass
+
+    pass
+
+
 def find_intersections(control_points, track_points, left_track, right_track):
-
-    # get perpendicular vector to input vector a
-    def perp( a ) :
-        b = np.empty_like(a)
-        b[0] = -a[1]
-        b[1] = a[0]
-        return b
-
     # line segment a given by endpoints a1, a2
     # line segment b given by endpoints b1, b2
     # return
@@ -191,12 +231,12 @@ def find_intersections(control_points, track_points, left_track, right_track):
                 if has_intersection:
                     intersection_point = seg_intersect(A, B, C, D)
                     # print("found left-left intersection at i={} j={} at location {}".format(i, j, intersection_point))
-                    plt.scatter([intersection_point[0]], [intersection_point[1]], color='k')
+                    # plt.scatter([intersection_point[0]], [intersection_point[1]], color='k')
                     # print("ABCD points are {} {} {} {}".format(A, B, C, D))
-                    plt.plot(A[0], A[1], 'bo-', alpha=0.5)
-                    plt.plot(B[0], B[1], 'bo-', alpha=0.5)
-                    plt.plot(C[0], C[1], 'yo-', alpha=0.5)
-                    plt.plot(D[0], D[1], 'yo-', alpha=0.5)
+                    # plt.plot(A[0], A[1], 'bo-', alpha=0.5)
+                    # plt.plot(B[0], B[1], 'bo-', alpha=0.5)
+                    # plt.plot(C[0], C[1], 'yo-', alpha=0.5)
+                    # plt.plot(D[0], D[1], 'yo-', alpha=0.5)
 
                     # set all the points in the loop to the intersection point
                     smaller_index, bigger_index = min(i, j-1), max(i, j-1)
@@ -217,40 +257,42 @@ def find_intersections(control_points, track_points, left_track, right_track):
 
 
 def main():
-    # # plot one track for debugging
-    # control_points, track_points, left_track, right_track = make_track()
+    # plot one track for debugging
+    control_points, track_points, left_track, right_track = make_track()
+    nudge_points(control_points, track_points, left_track, right_track)
     # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
     # print("has_intersection: {}".format(has_intersection))
-    # plt.plot(left_track[:,0], left_track[:,1], c='r')
-    # plt.plot(right_track[:,0], right_track[:,1], c='g')
-    # plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
-    # plt.plot(track_points[:,0], track_points[:,1], c='b')
-    # plt.axis('equal')
-    # plt.show()
-
-    # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(2, 4)
-    # f, axes = plt.subplots(4, 8)
-    f.subplots_adjust(left=0,right=1,bottom=0,top=1)
-    track_num = 0
-    for ax_row in axes:
-        for ax in ax_row:
-            track_num += 1
-            print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
-            track_data = make_track()
-            while find_intersections(*track_data):
-                print("  rejecting track")
-                track_data = make_track()
-            control_points, track_points, left_track, right_track = track_data
-            ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
-
-            ax.plot(left_track[:,0], left_track[:,1], c='r')
-            ax.plot(right_track[:,0], right_track[:,1], c='g')
-            # ax.plot(track_points[:,0], track_points[:,1], c='b')
-
-            ax.axis('equal')  # preserve aspect ratio
-            ax.axis('off')
+    plt.plot(left_track[:,0], left_track[:,1], c='r')
+    plt.plot(right_track[:,0], right_track[:,1], c='g')
+    plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
+    plt.plot(track_points[:,0], track_points[:,1], c='b')
+    plt.axis('equal')
     plt.show()
+
+    # # plot lots of tracks to get a better idea of the results
+    # f, axes = plt.subplots(2, 2)
+    # # f, axes = plt.subplots(4, 8)
+    # f.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    # track_num = 0
+    # for ax_row in axes:
+    #     for ax in ax_row:
+    #         track_num += 1
+    #         print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
+    #         track_data = make_track()
+    #         while find_intersections(*track_data):
+    #             print("  rejecting track")
+    #             track_data = make_track()
+    #         nudge_points(*track_data)
+    #         control_points, track_points, left_track, right_track = track_data
+    #         ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
+
+    #         ax.plot(left_track[:,0], left_track[:,1], c='r')
+    #         ax.plot(right_track[:,0], right_track[:,1], c='g')
+    #         # ax.plot(track_points[:,0], track_points[:,1], c='b')
+
+    #         ax.axis('equal')  # preserve aspect ratio
+    #         ax.axis('off')
+    # plt.show()
 
 if __name__ == "__main__":
     main()
