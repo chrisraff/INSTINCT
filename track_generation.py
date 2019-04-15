@@ -1,8 +1,8 @@
+from tqdm import trange
 import random
 import matplotlib.pyplot as plt
 import numpy as np
 from math import *
-# from scipy.interpolate import interp1d
 from scipy import interpolate
 from numpy.linalg import norm
 
@@ -95,8 +95,8 @@ def make_track():
         p0 = track_points[i-2]
         p1 = track_points[i-1]
         p2 = track_points[i]
-        # v = p1-p0  # forward
-        v = ((p1-p0)+(p2-p1))/2
+        # v = p2-p1  # forward
+        v = ((p1-p0)+(p2-p1))/2  # vector averaging for more smoothness
 
 
         delta_left = np.array([-v[1], v[0]])
@@ -120,6 +120,25 @@ def make_track():
 
 def find_intersections(control_points, track_points, left_track, right_track):
 
+    # get perpendicular vector to input vector a
+    def perp( a ) :
+        b = np.empty_like(a)
+        b[0] = -a[1]
+        b[1] = a[0]
+        return b
+
+    # line segment a given by endpoints a1, a2
+    # line segment b given by endpoints b1, b2
+    # return
+    def seg_intersect(a1,a2, b1,b2) :
+        da = a2-a1
+        db = b2-b1
+        dp = a1-b1
+        dap = perp(da)
+        denom = np.dot( dap, db)
+        num = np.dot( dap, dp )
+        return (num / denom.astype(float))*db + b1
+
     # https://stackoverflow.com/a/9997374/2230446
     def ccw(A,B,C):
         return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
@@ -128,9 +147,7 @@ def find_intersections(control_points, track_points, left_track, right_track):
     def lines_intersect(A,B,C,D):
         return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
-    there_was_a_self_intersection = False
-
-    from tqdm import trange
+    # check for intersections between the left and right tracks
     for i in range(len(left_track)):
         A = left_track[i-1]
         B = left_track[i]
@@ -149,40 +166,52 @@ def find_intersections(control_points, track_points, left_track, right_track):
                 # plt.plot(D[0], D[1], 'yo-', alpha=0.5)
                 return True
 
-        def has_self_intersection(side_track):
-            # may need to optimize length of this inner loop if the generator is too slow
+    def correct_self_intersection(side_track):
+        # may need to optimize length of this inner loop if the generator is too slow
+        for i in range(len(side_track)):
+            A = side_track[i-1]
+            B = side_track[i]
+
+            if np.allclose(A, B):
+                # print("skipping AB vectors that are touching")
+                continue
+
             for j in range(i-len(side_track)//2,i-2):
                 C = side_track[j-1]
                 D = side_track[j]
 
+                if np.allclose(A, D):
+                    # print("skipping AD vectors that are touching")
+                    continue
+                if np.allclose(B, C):
+                    # print("skipping BC vectors that are touching")
+                    continue
+
                 has_intersection = lines_intersect(A, B, C, D)
                 if has_intersection:
-                    # print("found left-left intersection at i={} j={}".format(i, j))
-                    # plt.plot(A[0], A[1], 'bo-', alpha=0.5)
-                    # plt.plot(B[0], B[1], 'bo-', alpha=0.5)
-                    # plt.plot(C[0], C[1], 'yo-', alpha=0.5)
-                    # plt.plot(D[0], D[1], 'yo-', alpha=0.5)
+                    intersection_point = seg_intersect(A, B, C, D)
+                    # print("found left-left intersection at i={} j={} at location {}".format(i, j, intersection_point))
+                    plt.scatter([intersection_point[0]], [intersection_point[1]], color='k')
+                    # print("ABCD points are {} {} {} {}".format(A, B, C, D))
+                    plt.plot(A[0], A[1], 'bo-', alpha=0.5)
+                    plt.plot(B[0], B[1], 'bo-', alpha=0.5)
+                    plt.plot(C[0], C[1], 'yo-', alpha=0.5)
+                    plt.plot(D[0], D[1], 'yo-', alpha=0.5)
 
+                    # set all the points in the loop to the intersection point
                     smaller_index, bigger_index = min(i, j-1), max(i, j-1)
                     if smaller_index < 0:
-                        self_intersecting_points = np.array( list(side_track[smaller_index:]) + list(side_track[:bigger_index]) )
-                        # print("merging A: {}".format( self_intersecting_points ))
-                        avg = np.mean(self_intersecting_points, axis=0)
-                        # print("avg: {}".format(avg))
-                        side_track[smaller_index:] = avg
-                        side_track[:bigger_index] = avg
-                        pass
+                        side_track[smaller_index:] = intersection_point
+                        side_track[:bigger_index] = intersection_point
                     else:
-                        # print("to delete: {}".format( len(side_track[1:-2,0]) ))
-                        # print("all: {}".format( len(side_track[:,0]) ))
-                        # print("merging B: {}".format( side_track[smaller_index:bigger_index] ))
-                        avg = np.mean(side_track[smaller_index:bigger_index])
-                        side_track[smaller_index:bigger_index] = avg
-                        pass
+                        side_track[smaller_index:bigger_index] = intersection_point
 
                     return True
+        return False
 
-        there_was_a_self_intersection = there_was_a_self_intersection or has_self_intersection(left_track) or has_self_intersection(right_track)
+    there_was_a_self_intersection = True
+    while(there_was_a_self_intersection):
+        there_was_a_self_intersection = correct_self_intersection(left_track) or correct_self_intersection(right_track)
 
     return there_was_a_self_intersection
 
@@ -192,15 +221,15 @@ def main():
     # control_points, track_points, left_track, right_track = make_track()
     # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
     # print("has_intersection: {}".format(has_intersection))
-    # plt.plot(left_track[:,0], left_track[:,1])
-    # plt.plot(right_track[:,0], right_track[:,1])
-    # plt.scatter(control_points[:,0], control_points[:,1], color='r')
-    # # plt.plot(track_points[:,0], track_points[:,1])
+    # plt.plot(left_track[:,0], left_track[:,1], c='r')
+    # plt.plot(right_track[:,0], right_track[:,1], c='g')
+    # plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
+    # plt.plot(track_points[:,0], track_points[:,1], c='b')
     # plt.axis('equal')
     # plt.show()
 
     # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(2, 8)
+    f, axes = plt.subplots(2, 4)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     track_num = 0
