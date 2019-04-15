@@ -73,7 +73,7 @@ def alterPoints(points):
 
 
 def make_track():
-    num_output_points = 50
+    num_output_points = 100
     track_width = 0.05
 
 
@@ -92,9 +92,12 @@ def make_track():
     right_track = []
 
     for i in range(len(track_points)):
-        p0 = track_points[i-1]
-        p1 = track_points[i]
-        v = p1-p0  # forward
+        p0 = track_points[i-2]
+        p1 = track_points[i-1]
+        p2 = track_points[i]
+        # v = p1-p0  # forward
+        v = ((p1-p0)+(p2-p1))/2
+
 
         delta_left = np.array([-v[1], v[0]])
         delta_left = track_width * delta_left / norm(delta_left)
@@ -197,7 +200,7 @@ def main():
     # plt.show()
 
     # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(4, 8)
+    f, axes = plt.subplots(2, 8)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     track_num = 0
@@ -210,7 +213,7 @@ def main():
                 print("  rejecting track")
                 track_data = make_track()
             control_points, track_points, left_track, right_track = track_data
-            ax.scatter(control_points[:,0], control_points[:,1], c='r')
+            ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
 
             ax.plot(left_track[:,0], left_track[:,1], c='r')
             ax.plot(right_track[:,0], right_track[:,1], c='g')
