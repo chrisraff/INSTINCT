@@ -10,7 +10,7 @@ from numpy.linalg import norm
 from track import Track, Line
 
 
-# np.random.seed(6)
+np.random.seed(6)
 
 # track settings
 num_tracks_to_generate = 10
