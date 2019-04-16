@@ -168,7 +168,7 @@ def nudge_points(control_points, track_points, left_track, right_track):
 
 
     def nudge_tracks(track1, track2):
-        for i in trange(len(track1)):
+        for i in range(len(track1)):
             A = track1[i]
 
             min_dist = 1e9
@@ -188,40 +188,39 @@ def nudge_points(control_points, track_points, left_track, right_track):
                     min_B = B
                     min_C = C
 
-                # print(dist_to_track)
-                if dist_to_track < track_width-1e-5:
-                    # points_are_too_close = True
-                    # print("NUDGING i={} j={}".format(i, j))
-                    nudge_direction = perp(C-B)
-                    nudge_direction = nudge_direction/norm(nudge_direction)
-                    # print(nudge_direction)
-                    plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
-                    plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
-                    plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
+                # if dist_to_track < track_width-1e-5:
+                #     # points_are_too_close = True
+                #     # print("NUDGING i={} j={}".format(i, j))
+                #     nudge_direction = perp(C-B)
+                #     nudge_direction = nudge_direction/norm(nudge_direction)
+                #     # print(nudge_direction)
+                #     plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
+                #     plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
+                #     plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
 
-                    # print("nudge amount: {}".format(track_width-dist_to_track))
+                #     # print("nudge amount: {}".format(track_width-dist_to_track))
 
-                    track1[i] += 0.5*(track_width-dist_to_track)*nudge_direction
-                    pass
+                #     track1[i] += 0.5*(track_width-dist_to_track)*nudge_direction
+                #     pass
 
-            # # print("min_dist: {}".format(min_dist))
-            # if min_dist < track_width:
-            #     # points_are_too_close = True
-            #     # print("NUDGING i={} j={}".format(i, j))
-            #     nudge_direction = perp(min_C-min_B)
-            #     nudge_direction = nudge_direction/norm(nudge_direction)
-            #     # print(nudge_direction)
-            #     # plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
-            #     # plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
-            #     # plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
+            # print("min_dist: {}".format(min_dist))
+            if min_dist < track_width:
+                # points_are_too_close = True
+                # print("NUDGING i={} j={}".format(i, j))
+                nudge_direction = perp(min_C-min_B)
+                nudge_direction = nudge_direction/norm(nudge_direction)
+                # print(nudge_direction)
+                # plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
+                # plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
+                # plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
 
-            #     print("nudge amount: {}".format(track_width-min_dist))
+                # print("nudge amount: {}".format(track_width-min_dist))
 
-            #     track1[i] += 1.0*(track_width-min_dist)*nudge_direction
-            #     pass
+                track1[i] += 1.0*(track_width-min_dist)*nudge_direction
+                pass
 
     nudge_tracks(left_track, right_track)
-    nudge_tracks(right_track, left_track)
+    # nudge_tracks(right_track, left_track)
 
     pass
 
@@ -317,42 +316,46 @@ def find_intersections(control_points, track_points, left_track, right_track):
 
 
 def main():
-    # plot one track for debugging
-    control_points, track_points, left_track, right_track = make_track()
-    nudge_points(control_points, track_points, left_track, right_track)
+    # # plot one track for debugging
+    # control_points, track_points, left_track, right_track = make_track()
     # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
-    # print("has_intersection: {}".format(has_intersection))
-    plt.plot(left_track[:,0], left_track[:,1], c='r')
-    plt.plot(right_track[:,0], right_track[:,1], c='g')
-    plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
-    plt.plot(track_points[:,0], track_points[:,1], c='b')
-    plt.axis('equal')
-    plt.show()
-
-    # # plot lots of tracks to get a better idea of the results
-    # f, axes = plt.subplots(2, 2)
-    # # f, axes = plt.subplots(4, 8)
-    # f.subplots_adjust(left=0,right=1,bottom=0,top=1)
-    # track_num = 0
-    # for ax_row in axes:
-    #     for ax in ax_row:
-    #         track_num += 1
-    #         print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
-    #         track_data = make_track()
-    #         while find_intersections(*track_data):
-    #             print("  rejecting track")
-    #             track_data = make_track()
-    #         nudge_points(*track_data)
-    #         control_points, track_points, left_track, right_track = track_data
-    #         ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
-
-    #         ax.plot(left_track[:,0], left_track[:,1], c='r')
-    #         ax.plot(right_track[:,0], right_track[:,1], c='g')
-    #         # ax.plot(track_points[:,0], track_points[:,1], c='b')
-
-    #         ax.axis('equal')  # preserve aspect ratio
-    #         ax.axis('off')
+    # # print("has_intersection: {}".format(has_intersection))
+    # nudge_points(control_points, track_points, left_track, right_track)
+    # plt.plot(left_track[:,0], left_track[:,1], c='r')
+    # plt.plot(right_track[:,0], right_track[:,1], c='g')
+    # plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
+    # plt.plot(track_points[:,0], track_points[:,1], c='b')
+    # plt.axis('equal')
     # plt.show()
+
+    # plot lots of tracks to get a better idea of the results
+    f, axes = plt.subplots(4, 2)
+    # f, axes = plt.subplots(4, 8)
+    f.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    track_num = 0
+    print("Generating tracks")
+    with tqdm(total=len(axes)*len(axes[0])) as pbar:
+        for ax_row in axes:
+            for ax in ax_row:
+                track_num += 1
+                # print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
+                track_data = make_track()
+                while find_intersections(*track_data):
+                    print("  rejecting track")
+                    track_data = make_track()
+                nudge_points(*track_data)
+                control_points, track_points, left_track, right_track = track_data
+                ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
+
+                ax.plot(left_track[:,0], left_track[:,1], c='r')
+                ax.plot(right_track[:,0], right_track[:,1], c='g')
+                # ax.plot(track_points[:,0], track_points[:,1], c='b')
+
+                ax.axis('equal')  # preserve aspect ratio
+                ax.axis('off')
+
+                pbar.update(1)
+    plt.show()
 
 if __name__ == "__main__":
     main()
