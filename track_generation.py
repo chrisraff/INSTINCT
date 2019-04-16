@@ -12,9 +12,9 @@ from track import Track, Line
 np.random.seed(6)
 
 # track settings
-num_tracks_to_generate = 100
+num_tracks_to_generate = 1
 num_control_points = 12
-qnum_track_points = 100
+num_track_points = 100
 track_width = 0.1
 
 # randomization settings
@@ -329,23 +329,37 @@ def find_intersections(control_points, track_points, left_track, right_track):
     return there_was_a_self_intersection
 
 
+def scale_track(control_points, track_points, left_track, right_track):
+    goal_track_width = 96
+    scaling_factor = goal_track_width / track_width
+    control_points *= scaling_factor
+    track_points *= scaling_factor
+    left_track *= scaling_factor
+    right_track *= scaling_factor
+
+
+
 def track_to_track_object(control_points, track_points, left_track, right_track):
 
+    scale_track(control_points, track_points, left_track, right_track)
+
     some_track = Track()
-    some_track.loop[0] = left_track
-    some_track.loop[0] = right_track
+    # some_track.loop[0] = list(map(tuple, left_track))#[(x[0], x[1]) for x in left_track]
+    # some_track.loop[1] = list(map(tuple, right_track))#[(x[0], x[1]) for x in right_track]
+    some_track.loop[0] = [(x[0], x[1]) for x in left_track]
+    some_track.loop[1] = [(x[0], x[1]) for x in right_track]
     some_track.updateTrackLines()
 
     some_track.start = Line((left_track[0][0], left_track[0][1]), (right_track[0][0], right_track[0][1]))
 
     for i in range(len(left_track)):
-        # using non-lousy line checkpoints
-        some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
+        # # using non-lousy line checkpoints
+        # some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
 
-        # # using lousy circle checkpoints for now
-        # checkpoint_center = (left_track[i] + right_track[i])/2
-        # checkpoint_radius = track_width/2
-        # some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
+        # using lousy circle checkpoints for now
+        checkpoint_center = (left_track[i] + right_track[i])/2
+        checkpoint_radius = track_width/2
+        some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
 
     return some_track
 
@@ -353,12 +367,11 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
 def make_track_object():
     track_data = make_track()
     while find_intersections(*track_data):
-        print("  rejecting track")
+        # print("  rejecting track")
         track_data = make_track()
     nudge_points(*track_data)
-    control_points, track_points, left_track, right_track = track_data
-
-    return track_to_track_object(*track_data)
+    track_object = track_to_track_object(*track_data)
+    return track_object
 
 
 def main():
