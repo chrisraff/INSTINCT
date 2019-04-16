@@ -4,9 +4,9 @@ class Track:
     def __init__(self):
         self.loop = [[],[]] # two arrays of points
         self.trackLines = [] # array of lines that correspond with loops for intersection checking
-        self.sectors = [] # array of lines
-        self.start = Line((10, -48), (10, 48))
-        self.checkpoints = [] # array of checkpoints (x, y, r). This should be changed to an array of lines
+        self.checkpoints = [] # array of lines
+        self.start_position = (0,0) # point
+        self.start_direction = 0 # radians
         
         # self.showCheckpoints = True
         
@@ -59,12 +59,40 @@ class Line:
             return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
         return ccw(self.p[0],l1.p[0],l1.p[1]) != ccw(self.p[1],l1.p[0],l1.p[1]) and ccw(self.p[0],self.p[1],l1.p[0]) != ccw(self.p[0],self.p[1],l1.p[1])
 
+    def point_dist(self, point):
+        px = self.p[1][0] - self.p[0][0]
+        py = self.p[1][1] - self.p[0][1]
 
-# from time import time #if I want simulated (not rendered) results to work, I need the framework to keep track of time and then I can make a call to it to ask for the time differences    
+        some_norm = px*px + py*py
+
+        # u =  ((point[0] - x1) * px + (y3 - y1) * py) / float(some_norm)
+        u =  ((point[0] - self.p[0][0]) * px + (point[1] - self.point[0][1]) * py) / float(some_norm)
+
+        if u > 1:
+            u = 1
+        elif u < 0:
+            u = 0
+
+        x = x1 + u * px
+        y = y1 + u * py
+        x = self.p[0][0] + u * px
+        y = self.p[1][0] + u * py
+
+        dx = x - point[0]
+        dy = y - point[1]
+
+        # Note: If the actual distance does not matter,
+        # if you only want to compare what this function
+        # returns to other results of this function, you
+        # can just return the squared distance instead
+        # (i.e. remove the sqrt) to gain a little performance
+
+        dist = (dx*dx + dy*dy)**.5
+
+        return dist
+
+   
 class LapData:
-    NOTHING = 0
-    CHECKPOINT = 1
-    INVALID_LAP = 2
 
     # car: The car that the lapData will record data for
     def __init__(self, car):
@@ -84,13 +112,15 @@ class LapData:
         for n in range(self.numCheckpoints):
             c0 = self.track.checkpoints[n]
             c1 = self.track.checkpoints[(n+1)%self.numCheckpoints]
-            dist = ((c0[0]-c1[0])**2 + (c0[1]-c1[1])**2)**0.5
+            c0_average = [ (c0.p[0][0] + c0.p[1][0]) / 2, (c0.p[0][1] + c0.p[1][1]) / 2]
+            c1_average = [ (c1.p[0][0] + c1.p[1][0]) / 2, (c1.p[0][1] + c1.p[1][1]) / 2]
+            dist = ((c0_average[0]-c1_averc0_average[0])**2 + (c0_average[1]-c1_averc0_average[1])**2)**0.5
             ret += [dist]
         return ret
         
 
-    # returns True if the lap was valid
-    def newLap(self):
+    # returns True if the lap was valid (unused)
+    def isNewLap(self):
     # if all checkpoints hit (lap is valid)
         valid = self.nextCheckpoint == self.numCheckpoints
         if valid:
@@ -102,28 +132,24 @@ class LapData:
         return valid
 
 
-    # returns the result of the update
+    # returns the number of checkpoints crossed (this should be changed to fractional lap progress made)
     def update(self):
-        result = LapData.NOTHING
+        carMotionLine = self.car.getMotionLine()
+
+        result = 0
 
         self.time += 1/60.0
-        if self.numCheckpoints > self.nextCheckpoint:
-            c = self.track.checkpoints[self.nextCheckpoint]
-            if (self.car.x - c[0])**2 + (self.car.y - c[1])**2 <= c[2]**2:
-                # print('checkpoint {}'.format(self.nextCheckpoint))
-                self.nextCheckpoint+=1 
+        while self.track.checkpoints [self.nextCheckpoint] .intersect( carMotionLine ):
+            result += 1
 
-                result = LapData.CHECKPOINT
-        # always check for intersection with the start line so a lap can be reset even if some checkpoints were missed
-        if (self.car.getMotionLine().intersect(self.track.start)):
-            result = LapData.CHECKPOINT if self.newLap() else LapData.INVALID_LAP
+            self.nextCheckpoint = (self.nextCheckpoint + 1) % self.numCheckpoints
         
         return result
             
             
     def getDistanceToNextCheckpoint(self):
         cid = self.nextCheckpoint % self.numCheckpoints
-        return ((self.car.x-self.track.checkpoints[cid][0])**2 + (self.car.y-self.track.checkpoints[cid][1])**2)**0.5
+        return self.track.checkpoints[self.nextCheckpoint] .point_dist( (self.car.x, self.car.y) )
         
     #def getProgress(self):
         
@@ -149,13 +175,14 @@ class Editor:
         # l loads
     
 
-    def passiveMotionFunc(self, x, y):#currently unused
+    def passiveMotionFunc(self, x, y): # currently unused
         if (self.mode == 3 and not self.checkpointClickState):
             cid = len(self.track.checkpoints)-1
             cx = self.track.checkpoints[cid][0]
             cy = self.track.checkpoints[cid][1]
             r = ((cx - x)**2 + (cy - y)**2)**0.5
             self.track.checkpoints[cid] = (cx, cy, r)
+            
         
     # def mouseFunc(self, button, state, x, y):
     #     if self.mode in [1, 2]:

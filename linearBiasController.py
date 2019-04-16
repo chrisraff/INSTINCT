@@ -6,7 +6,8 @@ from controllerUtils import getDistanceReadings
 
 class linearBiasController:
     def __init__(self, track = None, steeringWeights = None, thrustWeights = None, steeringBias = 0.0, thrustBias = 0.0):
-        self.myCar = car.Car(0.0, 0.0, track)
+        self.myCar = car.Car(track.start_position[0], track.start_position[1], track)
+        self.myCar.dir = track.start_direction
         self.track = track
         
         # controller variables go here
