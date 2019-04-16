@@ -5,6 +5,8 @@ import numpy as np
 from math import *
 from scipy import interpolate
 from numpy.linalg import norm
+from track import Track, Line
+
 
 np.random.seed(6)
 
@@ -315,47 +317,80 @@ def find_intersections(control_points, track_points, left_track, right_track):
     return there_was_a_self_intersection
 
 
+def track_to_track_object(control_points, track_points, left_track, right_track):
+
+    some_track = Track()
+    some_track.loop[0] = left_track
+    some_track.loop[0] = right_track
+    some_track.updateTrackLines()
+
+    some_track.start = Line((left_track[0][0], left_track[0][1]), (right_track[0][0], right_track[0][1]))
+
+    # using lousy circle checkpoints for now
+    for i in range(len(left_track)):
+        checkpoint_center = (left_track[i] + right_track[i])/2
+        checkpoint_radius = track_width/2
+
+        some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
+
+    return some_track
+
+
+def make_track_object():
+    track_data = make_track()
+    while find_intersections(*track_data):
+        print("  rejecting track")
+        track_data = make_track()
+    nudge_points(*track_data)
+    control_points, track_points, left_track, right_track = track_data
+
+    return track_to_track_object(*track_data)
+
+
 def main():
-    # # plot one track for debugging
-    # control_points, track_points, left_track, right_track = make_track()
-    # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
-    # # print("has_intersection: {}".format(has_intersection))
-    # nudge_points(control_points, track_points, left_track, right_track)
-    # plt.plot(left_track[:,0], left_track[:,1], c='r')
-    # plt.plot(right_track[:,0], right_track[:,1], c='g')
-    # plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
-    # plt.plot(track_points[:,0], track_points[:,1], c='b')
-    # plt.axis('equal')
-    # plt.show()
-
-    # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(2, 4)
-    # f, axes = plt.subplots(4, 8)
-    f.subplots_adjust(left=0,right=1,bottom=0,top=1)
-    track_num = 0
-    print("Generating tracks")
-    with tqdm(total=len(axes)*len(axes[0])) as pbar:
-        for ax_row in axes:
-            for ax in ax_row:
-                track_num += 1
-                # print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
-                track_data = make_track()
-                while find_intersections(*track_data):
-                    print("  rejecting track")
-                    track_data = make_track()
-                nudge_points(*track_data)
-                control_points, track_points, left_track, right_track = track_data
-                ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
-
-                ax.plot(left_track[:,0], left_track[:,1], c='r')
-                ax.plot(right_track[:,0], right_track[:,1], c='g')
-                # ax.plot(track_points[:,0], track_points[:,1], c='b')
-
-                ax.axis('equal')  # preserve aspect ratio
-                ax.axis('off')
-
-                pbar.update(1)
+    # plot one track for debugging
+    control_points, track_points, left_track, right_track = make_track()
+    has_intersection = find_intersections(control_points, track_points, left_track, right_track)
+    # print("has_intersection: {}".format(has_intersection))
+    nudge_points(control_points, track_points, left_track, right_track)
+    plt.plot(left_track[:,0], left_track[:,1], c='r')
+    plt.plot(right_track[:,0], right_track[:,1], c='g')
+    plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
+    plt.plot(track_points[:,0], track_points[:,1], c='b')
+    plt.axis('equal')
     plt.show()
+
+    # some_track = make_track_object()
+    # print(some_track)
+
+    # # plot lots of tracks to get a better idea of the results
+    # f, axes = plt.subplots(2, 4)
+    # # f, axes = plt.subplots(4, 8)
+    # f.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    # track_num = 0
+    # print("Generating tracks")
+    # with tqdm(total=len(axes)*len(axes[0])) as pbar:
+    #     for ax_row in axes:
+    #         for ax in ax_row:
+    #             track_num += 1
+    #             # print("generating track {} / {}".format(track_num, len(axes)*len(axes[0])))
+    #             track_data = make_track()
+    #             while find_intersections(*track_data):
+    #                 print("  rejecting track")
+    #                 track_data = make_track()
+    #             nudge_points(*track_data)
+    #             control_points, track_points, left_track, right_track = track_data
+    #             ax.scatter(control_points[:,0], control_points[:,1], c='b', alpha=0.5)
+
+    #             ax.plot(left_track[:,0], left_track[:,1], c='r')
+    #             ax.plot(right_track[:,0], right_track[:,1], c='g')
+    #             # ax.plot(track_points[:,0], track_points[:,1], c='b')
+
+    #             ax.axis('equal')  # preserve aspect ratio
+    #             ax.axis('off')
+
+    #             pbar.update(1)
+    # plt.show()
 
 if __name__ == "__main__":
     main()
