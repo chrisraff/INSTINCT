@@ -1,4 +1,4 @@
-from tqdm import trange
+from tqdm import trange, tqdm
 import random
 import matplotlib.pyplot as plt
 import numpy as np
@@ -329,7 +329,7 @@ def main():
     # plt.show()
 
     # plot lots of tracks to get a better idea of the results
-    f, axes = plt.subplots(4, 2)
+    f, axes = plt.subplots(2, 4)
     # f, axes = plt.subplots(4, 8)
     f.subplots_adjust(left=0,right=1,bottom=0,top=1)
     track_num = 0
