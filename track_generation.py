@@ -1,3 +1,4 @@
+from multiprocessing import Pool, cpu_count
 import pickle
 from tqdm import trange, tqdm
 import random
@@ -377,6 +378,11 @@ def make_track_object():
     return track_object
 
 
+def multiprocessing_generate_track(track_num):
+    some_track = make_track_object()
+    pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+
+
 def main():
     # # plot one track for debugging
     # control_points, track_points, left_track, right_track = make_track()
@@ -391,9 +397,12 @@ def main():
     # plt.show()
 
 
-    for track_num in trange(num_tracks_to_generate):
-        some_track = make_track_object()
-        pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+    # save tracks to pickle files
+    # for track_num in trange(num_tracks_to_generate):
+    #     some_track = make_track_object()
+    #     pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+    with Pool(cpu_count()) as p:
+        r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate)), total=num_tracks_to_generate))
 
 
     # # plot lots of tracks to get a better idea of the results
