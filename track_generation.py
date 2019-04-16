@@ -166,25 +166,18 @@ def nudge_points(control_points, track_points, left_track, right_track):
 
         return dist
 
-    points_are_too_close = True
-    attempts = 0
-    while(points_are_too_close):
-        points_are_too_close = False
-        attempts += 1
-        if attempts > 40:
-            break
 
-
-        for i in range(len(left_track)):
-            A = left_track[i]
+    def nudge_tracks(track1, track2):
+        for i in trange(len(track1)):
+            A = track1[i]
 
             min_dist = 1e9
             min_B = None
             min_C = None
 
-            for j in range(len(right_track)):
-                B = right_track[j-1]
-                C = right_track[j]
+            for j in range(len(track2)):
+                B = track2[j-1]
+                C = track2[j]
 
                 # "2*" is for DEBUGGING ONLY
                 # dist_to_track = point_line_dist(B, C, A)
@@ -206,9 +199,9 @@ def nudge_points(control_points, track_points, left_track, right_track):
                     plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
                     plt.scatter([A[0]], [A[1]], c='black', alpha=0.2)
 
-                    print("nudge amount: {}".format(track_width-dist_to_track))
+                    # print("nudge amount: {}".format(track_width-dist_to_track))
 
-                    left_track[i] += 0.5*(track_width-dist_to_track)*nudge_direction
+                    track1[i] += 0.5*(track_width-dist_to_track)*nudge_direction
                     pass
 
             # # print("min_dist: {}".format(min_dist))
@@ -224,8 +217,11 @@ def nudge_points(control_points, track_points, left_track, right_track):
 
             #     print("nudge amount: {}".format(track_width-min_dist))
 
-            #     left_track[i] += 1.0*(track_width-min_dist)*nudge_direction
+            #     track1[i] += 1.0*(track_width-min_dist)*nudge_direction
             #     pass
+
+    nudge_tracks(left_track, right_track)
+    nudge_tracks(right_track, left_track)
 
     pass
 
