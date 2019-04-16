@@ -12,7 +12,7 @@ from track import Track, Line
 np.random.seed(6)
 
 # track settings
-num_tracks_to_generate = 1
+num_tracks_to_generate = 10
 num_control_points = 12
 num_track_points = 100
 track_width = 0.1
@@ -344,22 +344,25 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
     scale_track(control_points, track_points, left_track, right_track)
 
     some_track = Track()
-    # some_track.loop[0] = list(map(tuple, left_track))#[(x[0], x[1]) for x in left_track]
-    # some_track.loop[1] = list(map(tuple, right_track))#[(x[0], x[1]) for x in right_track]
     some_track.loop[0] = [(x[0], x[1]) for x in left_track]
     some_track.loop[1] = [(x[0], x[1]) for x in right_track]
     some_track.updateTrackLines()
 
-    some_track.start = Line((left_track[0][0], left_track[0][1]), (right_track[0][0], right_track[0][1]))
+    start_direction_vector = track_points[0]-track_points[-2]
+    some_track.start_position = (left_track[0]+left_track[-2]+right_track[0]+right_track[-2])/4
+    some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
 
     for i in range(len(left_track)):
-        # # using non-lousy line checkpoints
-        # some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
+        # using line checkpoints
+        some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
 
-        # using lousy circle checkpoints for now
-        checkpoint_center = (left_track[i] + right_track[i])/2
-        checkpoint_radius = track_width/2
-        some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
+    # plt.plot(left_track[:,0], left_track[:,1], c='r')
+    # plt.plot(right_track[:,0], right_track[:,1], c='g')
+    # plt.scatter([start_point[0]], [start_point[1]], color='k')
+    # plt.scatter([start_point[0]+start_direction_vector[0]], [start_point[1]+start_direction_vector[1]], color='b')
+    # plt.scatter([0], [0], color='cyan')
+    # plt.axis('equal')
+    # plt.show()
 
     return some_track
 
