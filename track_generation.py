@@ -1,3 +1,4 @@
+import pickle
 from tqdm import trange, tqdm
 import random
 import matplotlib.pyplot as plt
@@ -11,8 +12,9 @@ from track import Track, Line
 np.random.seed(6)
 
 # track settings
+num_tracks_to_generate = 100
 num_control_points = 12
-num_track_points = 100
+qnum_track_points = 100
 track_width = 0.1
 
 # randomization settings
@@ -105,9 +107,13 @@ def make_track():
         p0 = track_points[i-2]
         p1 = track_points[i-1]
         p2 = track_points[i]
-        v = p2-p1  # forward
-        # v = ((p1-p0)+(p2-p1))/2  # vector averaging for more smoothness
+        # v = p2-p1  # forward
+        v = ((p1-p0)+(p2-p1))/2  # vector averaging for more smoothness
 
+        if i == 0:
+            left_track += [np.array([0, 0])]
+            right_track += [np.array([0, 0])]
+            continue
 
         delta_left = perp(v)
         delta_left = track_width/2 * delta_left / norm(delta_left)
@@ -124,6 +130,8 @@ def make_track():
 
     left_track[0] = left_track[-1]
     right_track[0] = right_track[-1]
+    # left_track[-1] = left_track[0]
+    # right_track[-1] = right_track[0]
 
     return control_points, track_points, left_track, right_track
 
@@ -143,9 +151,9 @@ def nudge_points(control_points, track_points, left_track, right_track):
         px = x2-x1
         py = y2-y1
 
-        norm = px*px + py*py
+        some_norm = px*px + py*py
 
-        u =  ((x3 - x1) * px + (y3 - y1) * py) / float(norm)
+        u =  ((x3 - x1) * px + (y3 - y1) * py) / float(some_norm)
 
         if u > 1:
             u = 1
@@ -183,7 +191,11 @@ def nudge_points(control_points, track_points, left_track, right_track):
 
                 # "2*" is for DEBUGGING ONLY
                 # dist_to_track = point_line_dist(B, C, A)
-                dist_to_track = point_line_dist(*B, *C, *A)
+
+                if np.allclose(B, C):
+                    dist_to_track = norm(B-A)
+                else:
+                    dist_to_track = point_line_dist(*B, *C, *A)
 
                 if dist_to_track < min_dist:
                     min_dist = dist_to_track
@@ -326,12 +338,14 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
 
     some_track.start = Line((left_track[0][0], left_track[0][1]), (right_track[0][0], right_track[0][1]))
 
-    # using lousy circle checkpoints for now
     for i in range(len(left_track)):
-        checkpoint_center = (left_track[i] + right_track[i])/2
-        checkpoint_radius = track_width/2
+        # using non-lousy line checkpoints
+        some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
 
-        some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
+        # # using lousy circle checkpoints for now
+        # checkpoint_center = (left_track[i] + right_track[i])/2
+        # checkpoint_radius = track_width/2
+        # some_track.checkpoints += [ (checkpoint_center[0], checkpoint_center[1], checkpoint_radius) ]
 
     return some_track
 
@@ -348,20 +362,23 @@ def make_track_object():
 
 
 def main():
-    # plot one track for debugging
-    control_points, track_points, left_track, right_track = make_track()
-    has_intersection = find_intersections(control_points, track_points, left_track, right_track)
-    # print("has_intersection: {}".format(has_intersection))
-    nudge_points(control_points, track_points, left_track, right_track)
-    plt.plot(left_track[:,0], left_track[:,1], c='r')
-    plt.plot(right_track[:,0], right_track[:,1], c='g')
-    plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
-    plt.plot(track_points[:,0], track_points[:,1], c='b')
-    plt.axis('equal')
-    plt.show()
+    # # plot one track for debugging
+    # control_points, track_points, left_track, right_track = make_track()
+    # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
+    # # print("has_intersection: {}".format(has_intersection))
+    # nudge_points(control_points, track_points, left_track, right_track)
+    # plt.plot(left_track[:,0], left_track[:,1], c='r')
+    # plt.plot(right_track[:,0], right_track[:,1], c='g')
+    # plt.scatter(control_points[:,0], control_points[:,1], color='b', alpha=0.5)
+    # plt.plot(track_points[:,0], track_points[:,1], c='b')
+    # plt.axis('equal')
+    # plt.show()
 
-    # some_track = make_track_object()
-    # print(some_track)
+
+    for track_num in trange(num_tracks_to_generate):
+        some_track = make_track_object()
+        pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+
 
     # # plot lots of tracks to get a better idea of the results
     # f, axes = plt.subplots(2, 4)
