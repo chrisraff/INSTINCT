@@ -10,7 +10,7 @@ from numpy.linalg import norm
 from track import Track, Line
 
 
-np.random.seed(6)
+# np.random.seed(6)
 
 # track settings
 num_tracks_to_generate = 10
@@ -379,6 +379,7 @@ def make_track_object():
 
 
 def multiprocessing_generate_track(track_num):
+    np.random.seed(track_num)
     some_track = make_track_object()
     pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
 
