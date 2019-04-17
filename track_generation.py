@@ -222,8 +222,15 @@ def nudge_points(control_points, track_points, left_track, right_track):
             if min_dist < track_width:
                 # points_are_too_close = True
                 # print("NUDGING i={} j={}".format(i, j))
-                nudge_direction = perp(min_C-min_B)
-                nudge_direction = nudge_direction/norm(nudge_direction)
+
+                if norm(min_C-min_B) < 1e-5:
+                    # the line is basically a point, so treat it like a point
+                    nudge_direction = A-min_C
+                    nudge_direction = nudge_direction/norm(nudge_direction)
+                else:
+                    nudge_direction = perp(min_C-min_B)
+                    nudge_direction = nudge_direction/norm(nudge_direction)
+
                 # print(nudge_direction)
                 # plt.scatter([B[0]], [B[1]], color='red', alpha=0.2)
                 # plt.scatter([C[0]], [C[1]], color='red', alpha=0.2)
