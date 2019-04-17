@@ -20,7 +20,7 @@ gaController = linearBiasController.linearBiasController(track, gaParams[0][0], 
 
 controllers = [ gaController ]
 
-focus_car = controllers[0].myCar
+controllers[0].car.initLapData()
 
 
 def init():
@@ -33,6 +33,8 @@ def update(frame):
 
     for controller in controllers:
         controller.update()
+
+    focus_car = controllers[0].car
 
     angles = focus_car.dir + np.array( [ - np.pi/6, np.pi/6, np.pi - np.pi/6, np.pi + np.pi/6, - np.pi/6 ] )
 

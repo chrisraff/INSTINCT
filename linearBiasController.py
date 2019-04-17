@@ -6,8 +6,8 @@ from controllerUtils import getDistanceReadings
 
 class linearBiasController:
     def __init__(self, track = None, steeringWeights = None, thrustWeights = None, steeringBias = 0.0, thrustBias = 0.0):
-        self.myCar = car.Car(track.start_position[0], track.start_position[1], track)
-        self.myCar.dir = track.start_direction
+        self.car = car.Car(track.start_position[0], track.start_position[1], track)
+        self.car.dir = track.start_direction
         self.track = track
         
         # controller variables go here
@@ -27,17 +27,17 @@ class linearBiasController:
     def update(self):
         # controller logic goes here
 
-        self.percepts[:self.numDistSensors] = getDistanceReadings(self.myCar, self.track, self.numDistSensors)
+        self.percepts[:self.numDistSensors] = getDistanceReadings(self.car, self.track, self.numDistSensors)
         
-        self.percepts[-1] = self.myCar.speed
+        self.percepts[-1] = self.car.speed
         
         steering = np.dot(self.steeringWeights, self.percepts) + self.steeringBias
         thrust   = np.dot(self.thrustWeights, self.percepts) + self.thrustBias
-        self.myCar.steering =  steering
-        self.myCar.throttle =  thrust if thrust > 0 else 0
-        self.myCar.brake    = -thrust if thrust < 0 else 0
+        self.car.steering =  steering
+        self.car.throttle =  thrust if thrust > 0 else 0
+        self.car.brake    = -thrust if thrust < 0 else 0
         
-        self.myCar.update()
+        self.car.update()
         
     # def displayFunc(self):
     #     # display things about the controller (like the percepts)
