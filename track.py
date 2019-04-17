@@ -65,16 +65,13 @@ class Line:
 
         some_norm = px*px + py*py
 
-        # u =  ((point[0] - x1) * px + (y3 - y1) * py) / float(some_norm)
-        u =  ((point[0] - self.p[0][0]) * px + (point[1] - self.point[0][1]) * py) / float(some_norm)
+        u =  ((point[0] - self.p[0][0]) * px + (point[1] - self.p[0][1]) * py) / float(some_norm)
 
         if u > 1:
             u = 1
         elif u < 0:
             u = 0
 
-        x = x1 + u * px
-        y = y1 + u * py
         x = self.p[0][0] + u * px
         y = self.p[1][0] + u * py
 
@@ -114,7 +111,7 @@ class LapData:
             c1 = self.track.checkpoints[(n+1)%self.numCheckpoints]
             c0_average = [ (c0.p[0][0] + c0.p[1][0]) / 2, (c0.p[0][1] + c0.p[1][1]) / 2]
             c1_average = [ (c1.p[0][0] + c1.p[1][0]) / 2, (c1.p[0][1] + c1.p[1][1]) / 2]
-            dist = ((c0_average[0]-c1_averc0_average[0])**2 + (c0_average[1]-c1_averc0_average[1])**2)**0.5
+            dist = ((c0_average[0]-c1_average[0])**2 + (c0_average[1]-c1_average[1])**2)**0.5
             ret += [dist]
         return ret
         
