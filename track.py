@@ -129,18 +129,20 @@ class LapData:
         return valid
 
 
-    # returns the number of checkpoints crossed (this should be changed to fractional lap progress made)
+    # returns the number of checkpoints crossed (this could be changed to fractional lap progress made)
     def update(self):
+        self.time += 1/60.0
+
+        # see if we passed any checkpoints
         carMotionLine = self.car.getMotionLine()
 
         result = 0
-
-        self.time += 1/60.0
         while self.track.checkpoints [self.nextCheckpoint] .intersect( carMotionLine ):
             result += 1
+            # print('checkpoint {}'.format(self.nextCheckpoint))
 
             self.nextCheckpoint = (self.nextCheckpoint + 1) % self.numCheckpoints
-        
+
         return result
             
             
