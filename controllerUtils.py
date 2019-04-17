@@ -36,6 +36,9 @@ def intersectsAt(p, d, l):
     lX = l.p[0][0] - l.p[1][0]
     lY = l.p[0][1] - l.p[1][1]
     llength = (lX**2 + lY**2)**0.5
+
+    if llength == 0:
+        return float('inf')
     lN = (-lY/llength, lX/llength)
     
     # calculate t
