@@ -345,17 +345,28 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
     scale_track(control_points, track_points, left_track, right_track)
 
     some_track = Track()
-    some_track.loop[0] = [(x[0], x[1]) for x in left_track]
-    some_track.loop[1] = [(x[0], x[1]) for x in right_track]
-    some_track.updateTrackLines()
 
-    start_direction_vector = track_points[0]-track_points[-2]
-    some_track.start_position = (left_track[0]+left_track[-2]+right_track[0]+right_track[-2])/4
-    some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
-
-    for i in range(len(left_track)):
+    for i in range(len(left_track)-1):
         # using line checkpoints
         some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
+
+    # remove the overlapping points as per chris' recommendation
+    def without_duplicate_vectors(a):
+        _, idx = np.unique(a.round(decimals=6), return_index=True, axis=0)
+        return a[np.sort(idx)]
+
+    left_track = without_duplicate_vectors(left_track)
+    right_track = without_duplicate_vectors(right_track)
+    track_points = without_duplicate_vectors(track_points)
+    control_points = without_duplicate_vectors(control_points)
+
+    some_track.loop[0] = [(x[0], x[1]) for x in left_track]
+    some_track.loop[1] = [(x[0], x[1]) for x in right_track]
+
+    start_direction_vector = track_points[0]-track_points[-1]
+    start_point = (left_track[0]+left_track[-1]+right_track[0]+right_track[-1])/4
+    some_track.start_position = start_point
+    some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
 
     # plt.plot(left_track[:,0], left_track[:,1], c='r')
     # plt.plot(right_track[:,0], right_track[:,1], c='g')
@@ -400,8 +411,7 @@ def main():
 
     # save tracks to pickle files
     # for track_num in trange(num_tracks_to_generate):
-    #     some_track = make_track_object()
-    #     pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+    #     multiprocessing_generate_track(track_num)
     with Pool(cpu_count()) as p:
         r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate)), total=num_tracks_to_generate))
 
