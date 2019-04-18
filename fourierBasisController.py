@@ -92,7 +92,7 @@ class FourierBasisController:
 
         if (self.frames_per_action <= self.frames_this_action):
             
-            s_ = self.get_state_variables()
+            s_new = self.get_state_variables()
             
             if self.train:
                 # Reward the previous state
@@ -100,10 +100,10 @@ class FourierBasisController:
 
                 phi_s = self.fourier.phi(self.percepts)
 
-                phi_s_ = self.fourier.phi(s_)
-                action_greedy = self.choose_action(s_, eps=0)
+                phi_s_new = self.fourier.phi(s_new)
+                action_greedy = self.choose_action(s_new, eps=0)
 
-                expected_next_return = phi_s_ @ self.w[action_greedy]
+                expected_next_return = phi_s_new @ self.w[action_greedy]
             
                 # td update
                 update = self.step_size * (reward + self.gamma * expected_next_return - (phi_s @ self.w[self.action])) * phi_s
@@ -115,7 +115,7 @@ class FourierBasisController:
             self.current_return += self.current_discount * self.reward_this_action
 
             # Get the new action
-            self.percepts = s_
+            self.percepts = s_new
 
             self.action = self.choose_action(self.percepts, self.epsilon)
 
