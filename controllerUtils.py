@@ -1,6 +1,10 @@
 # this file contains general functions used by controllers to perceive the track
 from numpy import linspace, sin, cos, pi
 
+# used for loading tracks
+import pickle
+from os import scandir
+
 
 # 
 def getDistanceReadings(car, track, numDistSensors):
@@ -38,6 +42,7 @@ def intersectsAt(p, d, l):
     llength = (lX**2 + lY**2)**0.5
 
     if llength == 0:
+        # print('bad')
         return float('inf')
     lN = (-lY/llength, lX/llength)
     
@@ -64,3 +69,12 @@ def intersectsAt(p, d, l):
         return t
     else:
         return float('inf')
+
+
+# Load all tracks in a specified path (like "tracks/."). The tqdm argument allows you to track the progress by passing the tqdm function
+def load_tracks(path, tqdm=lambda some_list: some_list):
+    def safe_load(file):
+        with open(file, 'rb') as f:
+            meat = pickle.load(f)
+        return meat
+    return [safe_load(track) for track in tqdm(scandir(path)) if track.is_file()]
