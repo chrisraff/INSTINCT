@@ -127,7 +127,7 @@ class FourierBasisController:
         
         # turn the action [0...5] into car inputs [brk lft, brk cen, brk rit, gas lft, gas cen, gas rit]
         steering = (self.action % 3 - 1) * (self.car.getSteeringThreshold() - 0.01)
-        thrust   = (self.action // 2) * 2 - 1
+        thrust   = -1 if action < 3 else 1
 
         self.car.steering =  steering
         self.car.throttle =  thrust if thrust > 0 else 0
