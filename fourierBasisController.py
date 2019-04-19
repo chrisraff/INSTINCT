@@ -21,6 +21,7 @@ class FourierBasisController:
     UPDATERESULT_RESET = 1
 
     checkpoint_reward_strength = 1
+    death_reward_strength = 0
 
 
     def __init__(self, track, degree=2):
@@ -148,7 +149,7 @@ class FourierBasisController:
     def reset_and_punish(self):
         if self.train:
             # punish the agent
-            reward = -5
+            reward = FourierBasisController.death_reward_strength
             phi_s = self.fourier.phi(self.percepts)
             
             # td update - the episode has ended so do not include the next estimation
@@ -165,7 +166,7 @@ class FourierBasisController:
 
         self.percepts = self.get_state_variables()
         
-        self.current_return += self.current_discount * (-5)
+        self.current_return += self.current_discount * (FourierBasisController.death_reward_strength)
 
         self.frames_this_action = self.frames_per_action
         self.returns += [self.current_return]
