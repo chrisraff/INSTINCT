@@ -17,8 +17,8 @@ track_glob = 'tracks_all/.'
 
 class FourierBasisController:
 
-    NOTHING = 0
-    RESET = 1
+    UPDATERESULT_NOTHING = 0
+    UPDATERESULT_RESET = 1
 
     checkpoint_reward_strength = 1
 
@@ -202,7 +202,7 @@ def train(fourierAgent, episodes, tracks, save_fname=None, save_every=100):
 
             result = fourierAgent.update()
 
-            if result == FourierBasisController.RESET:
+            if result == FourierBasisController.UPDATERESULT_RESET:
                 pbar.update()
                 ep += 1
 
