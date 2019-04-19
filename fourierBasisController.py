@@ -141,9 +141,9 @@ class FourierBasisController:
         # the agent can reset itself in terminal situations
         if self.auto_reset and (self.car.offRoad or (self.car.speed == 0 and thrust == -1 and self.frames_this_action == 1)):
             self.reset_and_punish()
-            return FourierBasisController.RESET
+            return FourierBasisController.UPDATERESULT_RESET
         
-        return FourierBasisController.NOTHING
+        return FourierBasisController.UPDATERESULT_NOTHING
 
     
     def reset_and_punish(self):
