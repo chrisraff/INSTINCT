@@ -55,6 +55,9 @@ class FourierBasisController:
         self.current_return = 0
         self.current_discount = 1
 
+        self.actions_per_episode = [0]
+        self.checkpoints_per_episode = [0]
+
         self.train = True
         self.auto_reset = True
 
@@ -92,6 +95,7 @@ class FourierBasisController:
         # controller logic goes here
 
         if (self.frames_per_action <= self.frames_this_action):
+            self.actions_per_episode[-1] += 1
             
             s_new = self.get_state_variables()
             
@@ -135,12 +139,14 @@ class FourierBasisController:
         self.car.brake    = -thrust if thrust < 0 else 0
         
         result = self.car.update()
+        self.checkpoints_per_episode[-1] += result
 
         self.reward_this_action += result * FourierBasisController.checkpoint_reward_strength
         
         # the agent can reset itself in terminal situations
         if self.auto_reset and (self.car.offRoad or (self.car.speed == 0 and thrust == -1 and self.frames_this_action == 1)):
             self.reset_and_punish()
+            
             return FourierBasisController.UPDATERESULT_RESET
         
         return FourierBasisController.UPDATERESULT_NOTHING
@@ -173,6 +179,9 @@ class FourierBasisController:
         self.reward_this_action = 0
         self.current_return = 0
         self.current_discount = 1
+
+        self.actions_per_episode += [0]
+        self.checkpoints_per_episode += [0]
 
     
     def update_track(self, track):
@@ -241,6 +250,18 @@ def main():
     train(agent, training_episodes, tracks, 'fourierController.pickle', 100)
 
     plt.plot(agent.returns, 'o')
+    plt.xlabel('Episode')
+    plt.ylabel('Return')
+    plt.show()
+    
+    plt.plot(agent.actions_per_episode[:-1], 'o')
+    plt.xlabel('Episode')
+    plt.ylabel('Number of Actions')
+    plt.show()
+    
+    plt.plot(agent.checkpoints_per_episode[:-1], 'o')
+    plt.xlabel('Episode')
+    plt.ylabel('Number of Checkpoints')
     plt.show()
 
 
