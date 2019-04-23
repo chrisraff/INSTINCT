@@ -73,7 +73,7 @@ class Line:
             u = 0
 
         x = self.p[0][0] + u * px
-        y = self.p[1][0] + u * py
+        y = self.p[0][1] + u * py
 
         dx = x - point[0]
         dy = y - point[1]
