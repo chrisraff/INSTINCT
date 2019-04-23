@@ -98,7 +98,7 @@ class LapData:
         self.nextCheckpoint = 0
         self.numCheckpoints = len(self.track.checkpoints)
         self.checkpointDists = self.initCheckpointDists()
-        # self.checkpointNetDists = [sum(self.checkPointDists[:n+1] for n in range(self.numCheckpoints
+        self.checkpointNetDists = [0] + [sum(self.checkpointDists[:n+1]) for n in range(self.numCheckpoints)] # could just use cumulative sum...
         self.car = car
         self.startTime = 0 # the current lap's start time
         self.time = 0
@@ -147,10 +147,24 @@ class LapData:
             
             
     def getDistanceToNextCheckpoint(self):
-        cid = self.nextCheckpoint % self.numCheckpoints
-        return self.track.checkpoints[self.nextCheckpoint] .point_dist( (self.car.x, self.car.y) )
+        return self.getDistanceToCheckpoint(self.nextCheckpoint)
+
+
+    def getDistanceToCheckpoint(self, checkpoint_index):
+        return self.track.checkpoints[checkpoint_index] .point_dist( (self.car.x, self.car.y) )
+
         
-    #def getProgress(self):
+    def getProgress(self):
+        distance = self.checkpointNetDists[self.nextCheckpoint]
+        
+        dist_to_next = self.track.checkpoints[self.nextCheckpoint] .point_dist ( (self.car.x, self.car.y) )
+        dist_to_last = self.track.checkpoints[ (self.nextCheckpoint - 1) % self.numCheckpoints ] .point_dist ( (self.car.x, self.car.y) )
+
+        normed_section_dist = dist_to_last / (dist_to_next + dist_to_last)
+
+        distance += normed_section_dist * self.checkpointDists[self.nextCheckpoint]
+
+        return distance / self.checkpointNetDists[-1]
         
     
         
