@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pickle
-import linearBiasController
+from fourierBasisController import *
 
 
 fig, ax = plt.subplots()
@@ -15,10 +15,14 @@ track_line_1, = plt.plot([0], [0], color='black', animated=True)
 track = pickle.load(open('default track.pickle', 'rb'))
 track.updateTrackLines()
 
-gaParams = pickle.load(open('default GA linearBias params.pickle', 'rb'))
-gaController = linearBiasController.linearBiasController(track, gaParams[0][0], gaParams[0][1], gaParams[0][2], gaParams[0][3])
 
-controllers = [ gaController ]
+fourierController = pickle.load(open('default fourierBasisController.pickle', 'rb'))
+fourierController.epsilon_min = 0
+fourierController.epsilon = 0
+fourierController.train = False
+fourierController.update_track(track)
+
+controllers = [ fourierController ]
 
 controllers[0].car.initLapData()
 

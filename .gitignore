@@ -3,3 +3,4 @@ __pycache__/*
 
 !default GA linearBias params.pickle
 !default track.pickle
+!default fourierBasisController.pickle
