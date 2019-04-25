@@ -8,11 +8,14 @@ from track import LapData
 import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from random import shuffle
+from random import shuffle, seed
 
 
 training_episodes = 20000
 track_glob = 'tracks_all/.'
+
+seed(0) # shuffled track order will be the same across runs
+np.random.seed(0) # random actions will be consistent run to run
 
 
 class FourierBasisController:
