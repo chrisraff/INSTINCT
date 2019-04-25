@@ -23,8 +23,9 @@ class FourierBasisController:
     UPDATERESULT_NOTHING = 0
     UPDATERESULT_RESET = 1
 
-    checkpoint_reward_strength = 1
-    death_reward_strength = 0
+    checkpoint_reward_strength = 60
+    lap_progress_reward_strength = 60
+    death_reward_strength = -1
 
 
     def __init__(self, track, degree=2):
@@ -45,14 +46,15 @@ class FourierBasisController:
         self.gamma = 0.99
         self.epsilon = 1
         self.epsilon_decay = 0.9999
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.001
 
         self.step_size = 1e-10
 
         self.action = 0
         self.frames_per_action = 5
         self.frames_this_action = self.frames_per_action
-        self.reward_this_action = 0
+        self.reward_this_action = 0 # reward_this_action is currently unused in favor of lap progress
+        self.progress_at_start_of_action = 0
 
         self.returns = []
         self.current_return = 0
@@ -73,6 +75,7 @@ class FourierBasisController:
         return percepts
 
     
+    # selects an action given a state using the state approximator, or choosing randomly with probability epsilon
     def choose_action(self, state, eps=0):
         assert min(*state) >= 0
 
@@ -101,11 +104,15 @@ class FourierBasisController:
             self.actions_per_episode[-1] += 1
             
             s_new = self.get_state_variables()
+
+            # reward = self.reward_this_action
+            current_progress = self.car.lapData.getProgress()
+            reward = (current_progress - self.progress_at_start_of_action) * FourierBasisController.lap_progress_reward_strength
+            # print(reward)
+            self.progress_at_start_of_action = current_progress
             
             if self.train:
                 # Reward the previous state
-                reward = self.reward_this_action
-
                 phi_s = self.fourier.phi(self.percepts)
 
                 phi_s_new = self.fourier.phi(s_new)
@@ -120,7 +127,7 @@ class FourierBasisController:
                 
                 self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
-            self.current_return += self.current_discount * self.reward_this_action
+            self.current_return += self.current_discount * reward
 
             # Get the new action
             self.percepts = s_new
@@ -128,7 +135,7 @@ class FourierBasisController:
             self.action = self.choose_action(self.percepts, self.epsilon)
 
             self.frames_this_action = 0
-            self.reward_this_action = 0
+            self.reward_this_action = 0 # reward_this_action is currently unused in favor of lap progress
             self.current_discount *= self.gamma
 
         self.frames_this_action += 1
@@ -141,10 +148,11 @@ class FourierBasisController:
         self.car.throttle =  thrust if thrust > 0 else 0
         self.car.brake    = -thrust if thrust < 0 else 0
         
+        # gets the number of checkpoints passed this frame in case it is used for rewards
         result = self.car.update()
         self.checkpoints_per_episode[-1] += result
 
-        self.reward_this_action += result * FourierBasisController.checkpoint_reward_strength
+        self.reward_this_action += result * FourierBasisController.checkpoint_reward_strength # reward_this_action is currently unused in favor of lap progress
         
         # the agent can reset itself in terminal situations
         if self.auto_reset and (self.car.offRoad or (self.car.speed == 0 and thrust == -1 and self.frames_this_action == 1)):
@@ -179,7 +187,8 @@ class FourierBasisController:
 
         self.frames_this_action = self.frames_per_action
         self.returns += [self.current_return]
-        self.reward_this_action = 0
+        self.reward_this_action = 0 # reward_this_action is currently unused in favor of lap progress
+        self.progress_at_start_of_action = self.car.lapData.getProgress()
         self.current_return = 0
         self.current_discount = 1
 
@@ -198,7 +207,8 @@ class FourierBasisController:
         self.percepts = self.get_state_variables()
 
         self.frames_this_action = self.frames_per_action
-        self.reward_this_action = 0
+        self.reward_this_action = 0 # reward_this_action is currently unused in favor of lap progress
+        self.progress_at_start_of_action = self.car.lapData.getProgress()
         self.current_return = 0
         self.current_discount = 1
 
