@@ -11,6 +11,9 @@ from track import Track, Line
 
 
 np.random.seed(6)
+# np.random.seed(5286)  #super hairy hairpin
+# np.random.seed(2114)  #hairpin start
+# np.random.seed(7268)  #"backwards" start
 
 # track settings
 num_tracks_to_generate = 10
@@ -22,6 +25,10 @@ track_width = 0.1
 max_uniform_delta_radius = 0.4
 max_contract_distance = -0.2
 max_expand_distance = 0.5
+
+# hairpin checking variables
+hairpin_threshold = 135  # min angle to be considered not a hairpin
+checkpoints_back = 4  # number of checkpoints backwards and forwards to check when checking for hairpin
 
 
 # get perpendicular vector to input vector a
@@ -353,8 +360,8 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
 
     some_track = Track()
 
+    # add line checkpoints
     for i in range(len(left_track)-1):
-        # using line checkpoints
         some_track.checkpoints += [ Line((left_track[i][0], left_track[i][1]), (right_track[i][0], right_track[i][1])) ]
 
     # remove the overlapping points as per chris' recommendation
@@ -364,22 +371,54 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
 
     left_track = without_duplicate_vectors(left_track)
     right_track = without_duplicate_vectors(right_track)
-    track_points = without_duplicate_vectors(track_points)
+    # track_points = without_duplicate_vectors(track_points)
     control_points = without_duplicate_vectors(control_points)
 
     some_track.loop[0] = [(x[0], x[1]) for x in left_track]
     some_track.loop[1] = [(x[0], x[1]) for x in right_track]
 
-    start_direction_vector = track_points[0]-track_points[-1]
-    start_point = (left_track[0]+left_track[-1]+right_track[0]+right_track[-1])/4
-    some_track.start_position = start_point
-    some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
 
-    # plt.plot(left_track[:,0], left_track[:,1], c='r')
-    # plt.plot(right_track[:,0], right_track[:,1], c='g')
-    # plt.scatter([start_point[0]], [start_point[1]], color='k')
-    # plt.scatter([start_point[0]+start_direction_vector[0]], [start_point[1]+start_direction_vector[1]], color='b')
-    # plt.scatter([0], [0], color='cyan')
+    # inch forward until there isn't a hairpin turn on the starting line
+    # track_points = track_points[:-1]
+    for i in range(len(track_points)):
+        behind_point = track_points[0+i]
+        start_point = track_points[checkpoints_back//2+i]
+        ahead_point = track_points[checkpoints_back+i]
+
+        # start_direction_vector = track_points[1+i]-track_points[0+i]
+        start_direction_vector = track_points[1+checkpoints_back//2+i]-track_points[0+checkpoints_back//2+i]
+
+        # behind_point = track_points[-checkpoints_back+i]
+        # start_point = track_points[0+i]
+        # ahead_point = track_points[checkpoints_back+i]
+
+        # behind_point = (left_track[-checkpoints_back+i]+left_track[-checkpoints_back-1+i]+right_track[-checkpoints_back+i]+right_track[-checkpoints_back-1+i])/4
+        # start_point = (left_track[0+i]+left_track[-1+i]+right_track[0+i]+right_track[-1+i])/4
+        # ahead_point = (left_track[checkpoints_back+i]+left_track[checkpoints_back-1+i]+right_track[checkpoints_back+i]+right_track[checkpoints_back-1+i])/4
+
+        behind_vector = behind_point - start_point
+        behind_vector = behind_vector / norm(behind_vector)
+        ahead_vector = ahead_point - start_point
+        ahead_vector = ahead_vector / norm(ahead_vector)
+
+        angle = np.arccos(np.clip(np.dot(behind_vector, ahead_vector), -1.0, 1.0))
+        angle = degrees(angle)
+
+        # print(angle)
+        if angle < hairpin_threshold:
+            # print("that's a hairpin!")
+            continue
+        else:
+            some_track.start_position = start_point
+            some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
+            break
+
+    # plt.plot(track_points[:,0], track_points[:,1], c='yellow', marker='o', alpha=0.3)
+    # plt.plot(left_track[:,0], left_track[:,1], c='red', marker='o')
+    # plt.plot(right_track[:,0], right_track[:,1], c='green', marker='o')
+    # plt.scatter([start_point[0]], [start_point[1]], color='black')
+    # plt.scatter([start_point[0]+start_direction_vector[0]], [start_point[1]+start_direction_vector[1]], color='blue')
+    # # plt.scatter([0], [0], color='cyan')
     # plt.axis('equal')
     # plt.show()
 
@@ -403,6 +442,10 @@ def multiprocessing_generate_track(track_num):
 
 
 def main():
+    # debug the track start
+    # make_track_object()
+
+
     # # plot one track for debugging
     # control_points, track_points, left_track, right_track = make_track()
     # has_intersection = find_intersections(control_points, track_points, left_track, right_track)
