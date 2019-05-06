@@ -4,9 +4,10 @@ from numpy import linspace, sin, cos, pi
 # used for loading tracks
 import pickle
 from os import scandir
+import os, os.path
 
 
-# 
+#
 def getDistanceReadings(car, track, numDistSensors):
     percepts = [0] * numDistSensors
 
@@ -35,7 +36,7 @@ def intersectsAt(p, d, l):
     # normalize d
     ddenom = mag(d)
     d = (d[0]/ddenom, d[1]/ddenom)
-    
+
     # get L normal
     lX = l.p[0][0] - l.p[1][0]
     lY = l.p[0][1] - l.p[1][1]
@@ -45,19 +46,19 @@ def intersectsAt(p, d, l):
         # print('bad')
         return float('inf')
     lN = (-lY/llength, lX/llength)
-    
+
     # calculate t
     disp = (l.p[0][0] - p[0], l.p[0][1] - p[1])
     denom = dot(d, lN)
     if denom == 0:
         return float('inf')
     t = dot(disp, lN)/denom
-    
+
     # see if t is valid
     '''def proj(a, b): # project a onto b
         dist = dot(a, b)/(b[0]**2 + b[1]**2)
         return (b[0]*dist, b[1]*dist)'''
-    
+
     '''p0p = proj(disp, d)
     p1p = proj((disp[0] - lX, disp[1] - lY), d)'''
     # p0p = mag(proj((l.p[0][0] - p[0], l.p[0][1] - p[1]), d))
@@ -77,4 +78,5 @@ def load_tracks(path, tqdm=lambda some_list: some_list):
         with open(file, 'rb') as f:
             meat = pickle.load(f)
         return meat
-    return [safe_load(track) for track in tqdm(scandir(path)) if track.is_file()]
+    total_tracks = len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
+    return [safe_load(track) for track in tqdm(scandir(path), total=total_tracks) if track.is_file()]
