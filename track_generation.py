@@ -29,7 +29,8 @@ max_expand_distance = 0.5
 
 # hairpin checking variables
 hairpin_threshold = 135  # min angle to be considered not a hairpin
-checkpoints_back = 4  # number of checkpoints backwards and forwards to check when checking for hairpin
+checkpoints_ahead = 2  # number of checkpoints backwards and forwards to check when checking for hairpin
+checkpoints_very_ahead = 4  # number of checkpoints backwards and forwards to check when checking for hairpin
 
 
 # get perpendicular vector to input vector a
@@ -380,38 +381,46 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
 
 
     # inch forward until there isn't a hairpin turn on the starting line
-    # track_points = track_points[:-1]
-    for i in range(len(track_points)):
-        behind_point = track_points[0+i]
-        start_point = track_points[checkpoints_back//2+i]
-        ahead_point = track_points[checkpoints_back+i]
+    for i in range(len(track_points)-checkpoints_very_ahead):
+        start_point = \
+        np.array(some_track.checkpoints[i].p[0])+ np.array(some_track.checkpoints[i].p[1])+ \
+        np.array(some_track.checkpoints[i-1].p[0])+ np.array(some_track.checkpoints[i-1].p[1])
+        start_point /= 4
 
-        # start_direction_vector = track_points[1+i]-track_points[0+i]
-        start_direction_vector = track_points[1+checkpoints_back//2+i]-track_points[0+checkpoints_back//2+i]
+        ahead_point = \
+        np.array(some_track.checkpoints[checkpoints_ahead+i].p[0])+ np.array(some_track.checkpoints[checkpoints_ahead+i].p[1])+ \
+        np.array(some_track.checkpoints[checkpoints_ahead+i-1].p[0])+ np.array(some_track.checkpoints[checkpoints_ahead+i-1].p[1])
+        ahead_point /= 4
 
-        # behind_point = track_points[-checkpoints_back+i]
-        # start_point = track_points[0+i]
-        # ahead_point = track_points[checkpoints_back+i]
+        very_ahead_point = \
+        np.array(some_track.checkpoints[checkpoints_very_ahead+i].p[0])+ np.array(some_track.checkpoints[checkpoints_very_ahead+i].p[1])+ \
+        np.array(some_track.checkpoints[checkpoints_very_ahead+i-1].p[0])+ np.array(some_track.checkpoints[checkpoints_very_ahead+i-1].p[1])
+        very_ahead_point /= 4
 
-        # behind_point = (left_track[-checkpoints_back+i]+left_track[-checkpoints_back-1+i]+right_track[-checkpoints_back+i]+right_track[-checkpoints_back-1+i])/4
-        # start_point = (left_track[0+i]+left_track[-1+i]+right_track[0+i]+right_track[-1+i])/4
-        # ahead_point = (left_track[checkpoints_back+i]+left_track[checkpoints_back-1+i]+right_track[checkpoints_back+i]+right_track[checkpoints_back-1+i])/4
+        start_direction_vector = \
+        np.array(some_track.checkpoints[i+1].p[0])+ np.array(some_track.checkpoints[i+1].p[1])+ \
+        np.array(some_track.checkpoints[i].p[0])+ np.array(some_track.checkpoints[i].p[1])
+        start_direction_vector /= 4
+        start_direction_vector -= start_point
 
-        behind_vector = behind_point - start_point
-        behind_vector = behind_vector / norm(behind_vector)
-        ahead_vector = ahead_point - start_point
+        # figure out the turn angle
+        ahead_vector =  start_point - ahead_point
         ahead_vector = ahead_vector / norm(ahead_vector)
+        very_ahead_vector = very_ahead_point - start_point
+        very_ahead_vector = very_ahead_vector / norm(very_ahead_vector)
 
-        angle = np.arccos(np.clip(np.dot(behind_vector, ahead_vector), -1.0, 1.0))
+        angle = np.arccos(np.clip(np.dot(ahead_vector, very_ahead_vector), -1.0, 1.0))
         angle = degrees(angle)
 
         # print(angle)
         if angle < hairpin_threshold:
-            # print("that's a hairpin!")
+            # print("{} degrees? that's a hairpin!".format(angle))
             continue
         else:
             some_track.start_position = start_point
             some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
+
+            some_track.checkpoints = some_track.checkpoints[i:] + some_track.checkpoints[:i]
             break
 
     # plt.plot(track_points[:,0], track_points[:,1], c='yellow', marker='o', alpha=0.3)
@@ -431,7 +440,7 @@ def reverse_track_object(some_track):
 
     # flip the checkpoints
     for i in range(len(new_track.checkpoints)):
-        line = new_track.checkpoints[i]  # Line
+        line = new_track.checkpoints[i]
         line.p[0] = list(line.p[0])
         line.p[1] = list(line.p[1])
 
@@ -483,8 +492,18 @@ def plot_track_object(track_object):
     left_track = np.array(track_object.loop[0])
     right_track = np.array(track_object.loop[1])
 
+    for i in range(len(track_object.checkpoints)):
+        plt.plot([track_object.checkpoints[i].p[0][0], track_object.checkpoints[i].p[1][0]], [track_object.checkpoints[i].p[0][1], track_object.checkpoints[i].p[1][1]], c='black', alpha=0.5)
+
     plt.plot(left_track[:,0], left_track[:,1], c='blue', marker='o', alpha=1)
     plt.plot(right_track[:,0], right_track[:,1], c='red', marker='o', alpha=1)
+
+    start = track_object.start_position
+    scaling_heading = 50
+    start_delta = [scaling_heading*cos(track_object.start_direction), scaling_heading*sin(track_object.start_direction)]
+    plt.plot([start[0]], [start[1]], c='green', marker='o', alpha=1)
+    plt.plot([start[0]+start_delta[0]], [start[1]+start_delta[1]], c='green', marker='o', alpha=0.7)
+
     plt.axis('equal')
     plt.show()
 
@@ -492,9 +511,9 @@ def plot_track_object(track_object):
 def main():
     # # debug the track start
     # some_track = make_track_object()
-    # reversed_some_track = reverse_track_object(some_track)
+    # # reversed_some_track = reverse_track_object(some_track)
     # plot_track_object(some_track)
-    # plot_track_object(reversed_some_track)
+    # # plot_track_object(reversed_some_track)
 
 
     # # plot one track for debugging
@@ -513,6 +532,7 @@ def main():
     # save tracks to pickle files
     # for track_num in trange(num_tracks_to_generate):
     #     multiprocessing_generate_track(track_num)
+
     with Pool(cpu_count()) as p:
         print("computing first half")
         r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate//2)), total=num_tracks_to_generate//2))
