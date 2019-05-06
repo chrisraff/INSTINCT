@@ -8,6 +8,7 @@ from math import *
 from scipy import interpolate
 from numpy.linalg import norm
 from track import Track, Line
+import copy
 
 
 np.random.seed(6)
@@ -425,6 +426,35 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
     return some_track
 
 
+def reverse_track_object(some_track):
+    new_track = copy.deepcopy(some_track)
+
+    # flip the checkpoints
+    for i in range(len(new_track.checkpoints)):
+        line = new_track.checkpoints[i]  # Line
+        line.p[0] = list(line.p[0])
+        line.p[1] = list(line.p[1])
+
+        line.p[0][0] *= -1
+        line.p[1][0] *= -1
+
+    # flip the inner track
+    for i in range(len(new_track.loop[0])):
+        new_track.loop[0][i] = list(new_track.loop[0][i])
+        new_track.loop[0][i][0] *= -1
+
+    # flip the outer track
+    for i in range(len(new_track.loop[1])):
+        new_track.loop[1][i] = list(new_track.loop[1][i])
+        new_track.loop[1][i][0] *= -1
+
+    # flip the starting line
+    new_track.start_position[0] *= -1
+    new_track.start_direction = np.arctan2(sin(new_track.start_direction), -cos(new_track.start_direction))
+
+    return new_track
+
+
 def make_track_object():
     track_data = make_track()
     while find_intersections(*track_data):
@@ -439,11 +469,32 @@ def multiprocessing_generate_track(track_num):
     np.random.seed(track_num)
     some_track = make_track_object()
     pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+    return track_num, some_track
+
+
+def multiprocessing_reverse_track(data):
+    track_num, track_object = data
+    some_track = reverse_track_object(track_object)
+    pickle.dump( some_track, open( 'tracks/track{:05d}_flip.pickle'.format(track_num), 'wb' ) )
+    return some_track
+
+
+def plot_track_object(track_object):
+    left_track = np.array(track_object.loop[0])
+    right_track = np.array(track_object.loop[1])
+
+    plt.plot(left_track[:,0], left_track[:,1], c='blue', marker='o', alpha=1)
+    plt.plot(right_track[:,0], right_track[:,1], c='red', marker='o', alpha=1)
+    plt.axis('equal')
+    plt.show()
 
 
 def main():
-    # debug the track start
-    # make_track_object()
+    # # debug the track start
+    # some_track = make_track_object()
+    # reversed_some_track = reverse_track_object(some_track)
+    # plot_track_object(some_track)
+    # plot_track_object(reversed_some_track)
 
 
     # # plot one track for debugging
@@ -463,7 +514,11 @@ def main():
     # for track_num in trange(num_tracks_to_generate):
     #     multiprocessing_generate_track(track_num)
     with Pool(cpu_count()) as p:
-        r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate)), total=num_tracks_to_generate))
+        print("computing first half")
+        r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate//2)), total=num_tracks_to_generate//2))
+
+        print("computing second half")
+        r = list(tqdm(p.imap(multiprocessing_reverse_track, r), total=num_tracks_to_generate//2))
 
 
     # # plot lots of tracks to get a better idea of the results
