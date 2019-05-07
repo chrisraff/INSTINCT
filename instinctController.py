@@ -12,16 +12,46 @@ from tqdm import tqdm, trange
 from random import shuffle, seed
 from track import *
 from multiprocessing import Pool, cpu_count
+from random import choice
+import argparse
 
 
-track_glob = 'tracks_all/.'
 
-training_generations = 4
-pop_size = 8
-num_elites = 3
+parser = argparse.ArgumentParser()
 
-mutation_std_decay = 1.0
-min_mutation_std_dev = 0.01
+# pickle_champion_every_n_generations = 5
+# training_generations = 30
+# pop_size = 80
+# num_elites = 6
+# num_purges = 0
+# sigma = 1
+# mutation_std_decay = 1.0
+# min_mutation_std_dev = 0.01
+parser.add_argument("-d", "--track_glob", type=str, default='tracks_all/')
+parser.add_argument("-c", "--pickle_champion_every_n_generations", type=int, default=5)
+parser.add_argument("-t", "--training_generations", type=int, default=30)
+parser.add_argument("-p", "--pop_size", type=int, default=80)
+parser.add_argument("-e", "--num_elites", type=int, default=6)
+parser.add_argument("-n", "--num_purges", type=int, default=0)
+parser.add_argument("-s", "--sigma", type=float, default=1)
+parser.add_argument("-m", "--mutation_std_decay", type=float, default=1.0)
+parser.add_argument("-i", "--min_mutation_std_dev", type=float, default=0.01)
+parser.add_argument("-g", "--tracks_per_generation", type=int, default=4)
+
+args = parser.parse_args()
+
+track_glob = args.track_glob
+pickle_champion_every_n_generations = args.pickle_champion_every_n_generations
+training_generations = args.training_generations
+pop_size = args.pop_size
+num_elites = args.num_elites
+num_purges = args.num_purges
+sigma = args.sigma  # softmax hyperparameter
+mutation_std_decay = args.mutation_std_decay
+min_mutation_std_dev = args.min_mutation_std_dev
+tracks_per_generation = args.tracks_per_generation
+
+
 
 
 seed(0) # shuffled track order will be the same across runs
@@ -151,7 +181,7 @@ def train(agent):
             # TODO mark this as having a big fitness
             # TODO implement this in the fourier controller
             print("wow, it ran a whole track!")
-            agent.returns += [10]
+            agent.returns += [agent.current_return+5]
             return agent
         if result == FourierBasisController.UPDATERESULT_RESET:
             return agent
@@ -184,23 +214,42 @@ class Population:
 
     def evaluate_agents(self):
         print("EVALUATING gen {}/{}".format(self.curr_generation+1, self.training_generations))
-        # TODO pick the track everyone will be training on randomly instead (according to a seed)
-        curr_track = self.tracks[self.curr_generation % len(self.tracks)]
 
-        # reset the agents and plop them into their latest fun little track!
-        for agent in self.pop:
-            agent.update_track( curr_track )
-            agent.epsilon = 0.001
+        # # TODO pick the track everyone will be training on randomly instead (according to a seed)
+        # curr_track = self.tracks[self.curr_generation % len(self.tracks)]
 
+        tracks_to_run = [choice(self.tracks) for _ in range(tracks_per_generation)]
 
-        # # without threading
-        # self.pop = [train(agent) for agent in tqdm(self.pop)]
+        agent_fitness = [0]*self.pop_size
 
-        # with threading
-        with Pool(cpu_count()) as p:
-            self.pop = list(tqdm(p.imap(train, self.pop), total=self.pop_size))
+        for curr_track in tqdm(tracks_to_run):
 
-        fitnesses = sorted([agent.returns[-1] for agent in self.pop], reverse=True)
+            # reset the agents and plop them into their latest fun little track!
+            for agent in self.pop:
+                # curr_track = choice(self.tracks)
+
+                agent.update_track( curr_track )
+                agent.epsilon = 0.001
+
+            # # without threading
+            # self.pop = [train(agent) for agent in tqdm(self.pop)]
+
+            # with threading
+            with Pool(cpu_count()) as p:
+                # self.pop = list(tqdm(p.imap(train, self.pop), total=self.pop_size))
+                self.pop = list(p.imap(train, self.pop))  #without tqdm
+
+            for i, agent in enumerate(self.pop):
+                agent_fitness[i] += agent.returns[-1]
+
+        # for i, agent in enumerate(self.pop):
+        #     agent_fitness[i] /= tracks_per_generation
+        #     agent.returns[-1] = agent_fitness[i]
+
+        # sort theh population by fitness
+        self.pop = sorted(self.pop, key=lambda x: np.mean(x.returns), reverse=True)
+
+        fitnesses = [agent.returns[-1] for agent in self.pop]
         top1, top2, top3 = fitnesses[:3]
         print("fitness: top: {:.4f} {:.4f} {:.4f} median: {:.4f} avg: {:.4f} min: {:.4f}".format( top1, top2, top3, fitnesses[self.pop_size//2], np.mean(fitnesses), fitnesses[-1] ))
 
@@ -211,8 +260,12 @@ class Population:
     def breed_next_generation_agents(self):
         print("BREEDING gen {}/{}".format(self.curr_generation+1, self.training_generations))
 
+        # TODO remove the `num_purges` worst performing agents
+        if num_purges > 0:
+            self.pop = self.pop[:-num_purges]
+
         fitnesses = np.array([agent.returns[-1] for agent in self.pop])
-        fitnesses = np.exp(fitnesses) / np.sum(np.exp(fitnesses))
+        fitnesses = np.exp(sigma*fitnesses) / np.sum(np.exp(sigma*fitnesses))
 
         top_agents = sorted(self.pop, key=lambda x: x.returns[-1], reverse=True)[:num_elites]
 
@@ -235,25 +288,45 @@ class Population:
 
 
 def main():
+    print("training population")
     start_time = time()
     pop_object = Population()
-    print("training population")
     while pop_object.curr_generation < pop_object.training_generations-1:
         pop_object.evaluate_agents()
+
+        if pop_object.curr_generation % pickle_champion_every_n_generations == 0:
+            # pickle the champion
+            print("pickling the champion")
+            pop_fname = "champion.pickle"
+            with open(pop_fname , 'wb') as f:
+                pickle.dump(pop_object.get_champion(), f)
+
         pop_object.breed_next_generation_agents()
+
+
     pop_object.evaluate_agents()
     duration1 = time()-start_time
     print("it took {:.3f} seconds to run {} generations with a population of {} with {} elites".format(duration1, training_generations, pop_size, num_elites))
 
+    # pickle the champion
+    print("pickling the champion")
     start_time = time()
+    pop_fname = "champion.pickle"
+    with open(pop_fname , 'wb') as f:
+        pickle.dump(pop_object.get_champion(), f)
+    duration2 = time()-start_time
+    print("it took {:.3f} seconds to pickle the champion".format(duration2))
+
     # pickle the population
     print("pickling the population")
+    start_time = time()
     pop_fname = "population.pickle"
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object, f)
-    duration2 = time()-start_time
-    print("it took {:.3f} seconds to pickle the population".format(duration2))
-    print("total time was {:.3f} seconds".format(duration1+duration2))
+    duration3 = time()-start_time
+    print("it took {:.3f} seconds to pickle the population".format(duration3))
+
+    print("total time was {:.3f} seconds".format(duration1+duration2+duration3))
 
 
 if __name__ == "__main__":
