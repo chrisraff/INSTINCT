@@ -1,8 +1,12 @@
+from random import seed, randint
+from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pickle
 from fourierBasisController import *
+from straightController import *
+from instinctController import *
 
 
 fig, ax = plt.subplots()
@@ -12,17 +16,32 @@ car_line, = plt.plot([0], [0], color='red', animated=True)
 track_line_0, = plt.plot([0], [0], color='black', animated=True)
 track_line_1, = plt.plot([0], [0], color='black', animated=True)
 
-track = pickle.load(open('default track.pickle', 'rb'))
+# track = pickle.load(open('default track.pickle', 'rb'))
+# track = pickle.load(open('tracks/track00000.pickle', 'rb'))
+# track = pickle.load(open('tracks/track00000_flip.pickle', 'rb'))
+# track = pickle.load(open('tracks/track00002.pickle', 'rb'))
+# track.updateTrackLines()
+
+seed(time())
+trackname = 'tracks/track{num:05d}{flipped}.pickle'.format(num=randint(0,5000), flipped='' if randint(0,1) == 0 else '_flip')
+print("loading track {}".format(trackname))
+track = pickle.load(open(trackname, 'rb'))
 track.updateTrackLines()
 
 
-fourierController = pickle.load(open('default fourierBasisController.pickle', 'rb'))
-fourierController.epsilon_min = 0
-fourierController.epsilon = 0
-fourierController.train = False
-fourierController.update_track(track)
+pop_object = pickle.load(open('population.pickle', 'rb'))
+controller = pop_object.get_champion()
 
-controllers = [ fourierController ]
+# controller = StraightController(track)
+# controller = pickle.load(open('instinctController.pickle', 'rb'))
+# controller = pickle.load(open('default fourierBasisController.pickle', 'rb'))
+# controller = pickle.load(open('fourierController.pickle', 'rb'))
+controller.epsilon_min = 0
+controller.epsilon = 0
+controller.train = False
+controller.update_track(track)
+
+controllers = [ controller ]
 
 controllers[0].car.initLapData()
 
@@ -54,7 +73,7 @@ def update(frame):
     track_line_1_y = [ track.loop[1][i][1] - focus_car.y for i in range(len(track.loop[1])) ]
     track_line_1_x += [ track.loop[1][0][0] - focus_car.x ]
     track_line_1_y += [ track.loop[1][0][1] - focus_car.y ]
-    
+
     car_line.set_data(car_line_x, car_line_y)
     track_line_0.set_data(track_line_0_x, track_line_0_y)
     track_line_1.set_data(track_line_1_x, track_line_1_y)
