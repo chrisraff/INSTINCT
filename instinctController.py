@@ -1,3 +1,4 @@
+from time import time
 import car
 import numpy as np
 from math import exp
@@ -15,11 +16,11 @@ from multiprocessing import Pool, cpu_count
 
 track_glob = 'tracks_all/.'
 
-training_generations = 10
+training_generations = 4
 pop_size = 8
 num_elites = 3
 
-mutation_std_decay = 1.5
+mutation_std_decay = 1.0
 min_mutation_std_dev = 0.01
 
 
@@ -121,8 +122,10 @@ class InstinctController(FourierBasisController):
         # # print(expected_returns.reshape((2,3))); print(action)
         # return action #, expected_returns[args]
 
-
-        return expected_returns_with_instincts_accounted_for.argmax()
+        if self.train:
+            return instinct_expected_returns.argmax()
+        else:
+            return expected_returns_with_instincts_accounted_for.argmax()
 
 
     def update(self):
@@ -148,6 +151,7 @@ def train(agent):
             # TODO mark this as having a big fitness
             # TODO implement this in the fourier controller
             print("wow, it ran a whole track!")
+            agent.returns += [10]
             return agent
         if result == FourierBasisController.UPDATERESULT_RESET:
             return agent
@@ -231,19 +235,25 @@ class Population:
 
 
 def main():
+    start_time = time()
     pop_object = Population()
     print("training population")
     while pop_object.curr_generation < pop_object.training_generations-1:
         pop_object.evaluate_agents()
         pop_object.breed_next_generation_agents()
     pop_object.evaluate_agents()
+    duration1 = time()-start_time
+    print("it took {:.3f} seconds to run {} generations with a population of {} with {} elites".format(duration1, training_generations, pop_size, num_elites))
 
-
+    start_time = time()
     # pickle the population
     print("pickling the population")
     pop_fname = "population.pickle"
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object, f)
+    duration2 = time()-start_time
+    print("it took {:.3f} seconds to pickle the population".format(duration2))
+    print("total time was {:.3f} seconds".format(duration1+duration2))
 
 
 if __name__ == "__main__":
