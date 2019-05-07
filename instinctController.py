@@ -92,6 +92,19 @@ class InstinctController(FourierBasisController):
     def __init__(self, track, dna):
         super().__init__(track, degree=2)
 
+        self.hyperparameters = {
+            'track_glob':track_glob,
+            'pickle_champion_every_n_generations':pickle_champion_every_n_generations,
+            'training_generations':training_generations,
+            'pop_size':pop_size,
+            'num_elites':num_elites,
+            'num_purges':num_purges,
+            'sigma':sigma,
+            'mutation_std_decay':mutation_std_decay,
+            'min_mutation_std_dev':min_mutation_std_dev,
+            'tracks_per_generation':tracks_per_generation,
+        }
+
         if dna is None:
             num_actions = 6
             num_percepts = self.numDistSensors+1+1  # plus one for speed, one for bias
@@ -193,6 +206,19 @@ class Population:
         # hyperparameters
         self.training_generations = training_generations
         self.pop_size = pop_size
+
+        self.hyperparameters = {
+            'track_glob':track_glob,
+            'pickle_champion_every_n_generations':pickle_champion_every_n_generations,
+            'training_generations':training_generations,
+            'pop_size':pop_size,
+            'num_elites':num_elites,
+            'num_purges':num_purges,
+            'sigma':sigma,
+            'mutation_std_decay':mutation_std_decay,
+            'min_mutation_std_dev':min_mutation_std_dev,
+            'tracks_per_generation':tracks_per_generation,
+        }
 
         self.curr_generation = 0
         self.pop = self.make_population()
