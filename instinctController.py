@@ -17,6 +17,7 @@ track_glob = 'tracks_all/.'
 
 training_generations = 10
 pop_size = 8
+num_elites = 3
 
 mutation_std_decay = 1.5
 min_mutation_std_dev = 0.01
@@ -144,6 +145,8 @@ def train(agent):
     while True:
         result = agent.update()
         if agent.car.lapData.nextCheckpoint == agent.car.lapData.numCheckpoints-1:
+            # TODO mark this as having a big fitness
+            # TODO implement this in the fourier controller
             print("wow, it ran a whole track!")
             return agent
         if result == FourierBasisController.UPDATERESULT_RESET:
@@ -176,7 +179,7 @@ class Population:
 
 
     def evaluate_agents(self):
-        print("EVALUATING gen {}".format(self.curr_generation))
+        print("EVALUATING gen {}/{}".format(self.curr_generation+1, self.training_generations))
         # TODO pick the track everyone will be training on randomly instead (according to a seed)
         curr_track = self.tracks[self.curr_generation % len(self.tracks)]
 
@@ -193,22 +196,25 @@ class Population:
         with Pool(cpu_count()) as p:
             self.pop = list(tqdm(p.imap(train, self.pop), total=self.pop_size))
 
+        fitnesses = sorted([agent.returns[-1] for agent in self.pop], reverse=True)
+        top1, top2, top3 = fitnesses[:3]
+        print("fitness: top: {:.4f} {:.4f} {:.4f} median: {:.4f} avg: {:.4f} min: {:.4f}".format( top1, top2, top3, fitnesses[self.pop_size//2], np.mean(fitnesses), fitnesses[-1] ))
+
+
         self.curr_generation += 1
 
 
     def breed_next_generation_agents(self):
-        print("BREEDING gen {}".format(self.curr_generation))
-        # fitness!
-
-        # for agent in self.pop:
-        #     fitness = agent.returns[-1]
-        fitness_and_agents = [(agent.returns[-1], agent) for agent in self.pop]
+        print("BREEDING gen {}/{}".format(self.curr_generation+1, self.training_generations))
 
         fitnesses = np.array([agent.returns[-1] for agent in self.pop])
         fitnesses = np.exp(fitnesses) / np.sum(np.exp(fitnesses))
 
+        top_agents = sorted(self.pop, key=lambda x: x.returns[-1], reverse=True)[:num_elites]
+
         new_pop = []
-        for i in range(self.pop_size):
+        new_pop += top_agents
+        for i in range(self.pop_size-num_elites):
             sample_dad = np.random.choice(self.pop, p=fitnesses)
             sample_mom = np.random.choice(self.pop, p=fitnesses)
 
