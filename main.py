@@ -23,14 +23,18 @@ track_line_1, = plt.plot([0], [0], color='black', animated=True)
 # track.updateTrackLines()
 
 seed(time())
-trackname = 'tracks/track{num:05d}{flipped}.pickle'.format(num=randint(0,5000), flipped='' if randint(0,1) == 0 else '_flip')
+trackname = 'tracks/track{:05d}{}.pickle'.format(randint(0,5000), '' if randint(0,1) == 0 else '_flip')
 print("loading track {}".format(trackname))
 track = pickle.load(open(trackname, 'rb'))
 track.updateTrackLines()
 
 
-pop_object = pickle.load(open('population.pickle', 'rb'))
-controller = pop_object.get_champion()
+# print("loading population")
+# pop_object = pickle.load(open('population.pickle', 'rb'))
+# controller = pop_object.get_champion()
+print("loading champion")
+controller = pickle.load(open('champion.pickle', 'rb'))
+# controller = pickle.load(open('awesome_champion.pickle', 'rb'))
 
 # controller = StraightController(track)
 # controller = pickle.load(open('instinctController.pickle', 'rb'))
@@ -81,6 +85,7 @@ def update(frame):
     return [track_line_0, track_line_1, car_line]
 
 
+print("loading visualizer")
 ftime = 1000/60 # delay between frames in milliseconds
 
 ani = FuncAnimation(fig, update, frames=np.linspace(0, 2*np.pi, 128),
