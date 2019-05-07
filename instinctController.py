@@ -15,6 +15,13 @@ from multiprocessing import Pool, cpu_count
 
 track_glob = 'tracks_all/.'
 
+training_generations = 10
+pop_size = 8
+
+mutation_std_decay = 1.5
+min_mutation_std_dev = 0.01
+
+
 seed(0) # shuffled track order will be the same across runs
 np.random.seed(0) # random actions will be consistent run to run
 
@@ -35,9 +42,12 @@ class DNA():
         self.arr = my_w
         return other_dna
 
-    def mutate(self):
+    def mutate(self, curr_generation):
         # hit with some guassians
-        std_dev = 1
+
+        # TODO tune this hyperparameter
+        std_dev = (1-10**(-mutation_std_decay))**curr_generation
+        std_dev = max(std_dev, min_mutation_std_dev)
 
         noise = np.random.normal(0, std_dev)
 
@@ -141,8 +151,8 @@ def train(agent):
 class Population:
     def __init__(self):
         # hyperparameters
-        self.training_generations = 3
-        self.pop_size = 4
+        self.training_generations = training_generations
+        self.pop_size = pop_size
 
         self.curr_generation = 0
         self.pop = self.make_population()
@@ -178,7 +188,6 @@ class Population:
 
         # with threading
         with Pool(cpu_count()) as p:
-            print("training generation {}".format(self.curr_generation))
             self.pop = list(tqdm(p.imap(train, self.pop), total=self.pop_size))
 
         self.curr_generation += 1
@@ -201,7 +210,7 @@ class Population:
             sample_mom = np.random.choice(self.pop, p=fitnesses)
 
             kid_dna = sample_dad.dna.crossover(sample_mom.dna)
-            kid_dna.mutate()
+            kid_dna.mutate(self.curr_generation)
             kid = InstinctController(Track(), dna=kid_dna)
 
             new_pop += [ kid ]
@@ -222,6 +231,7 @@ def main():
 
 
     # pickle the population
+    print("pickling the population")
     pop_fname = "population.pickle"
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object, f)
