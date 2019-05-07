@@ -1,7 +1,8 @@
 import numpy as np
 
 class FourierBasis:
-    def __init__(self, num_variables, degree):
+    # approximate upper bound controls for how large you expect the variables to be, even though they may be inifinite
+    def __init__(self, num_variables, degree, approximate_upper_bound=100):
         c_vec = np.zeros ( ((degree + 1) ** num_variables, num_variables) )
 
         for i in range(1, c_vec.shape[0]):
@@ -13,8 +14,10 @@ class FourierBasis:
                 c_vec[i, col] = 0
                 col += 1
                 c_vec[i, col] += 1
-        
+
         self.c_vec = c_vec
+
+        self.approximate_upper_bound = approximate_upper_bound
 
         # # the fancy way, with 4 state variables
         # n = degree
@@ -28,8 +31,7 @@ class FourierBasis:
 
 
     def phi(self, state):
-        approximate_upper_bound = 100
-        norm_state = np.tanh(np.array(state) / approximate_upper_bound) * 2 - 1 # range of [-1, 1]
+        norm_state = np.tanh(np.array(state) / self.approximate_upper_bound) * 2 - 1 # range of [-1, 1]
 
         result = np.cos(np.pi * (self.c_vec @ norm_state))
         return result

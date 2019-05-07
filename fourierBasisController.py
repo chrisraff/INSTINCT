@@ -23,20 +23,17 @@ class FourierBasisController:
     UPDATERESULT_NOTHING = 0
     UPDATERESULT_RESET = 1
 
-    checkpoint_reward_strength = 60
-    lap_progress_reward_strength = 60
-    death_reward_strength = -1
 
 
     def __init__(self, track, degree=2):
         self.car = car.Car(track.start_position[0], track.start_position[1], track)
         self.car.dir = track.start_direction
         self.track = track
-        
+
         # controller variables go here
         self.numDistSensors = 5
 
-        self.fourier = FourierBasis(self.numDistSensors + 1, degree)
+        self.fourier = FourierBasis(self.numDistSensors + 1, degree, approximate_upper_bound=100)
         self.w = np.zeros( (6, self.fourier.c_vec.shape[0]) ) # 6 actions
 
         self.car.initLapData()
@@ -66,15 +63,21 @@ class FourierBasisController:
         self.train = True
         self.auto_reset = True
 
-    
+        self.last_td_error = 0
+
+        self.checkpoint_reward_strength = 60
+        self.lap_progress_reward_strength = 60
+        self.death_reward_strength = -10
+
+
     def get_state_variables(self):
         percepts = getDistanceReadings(self.car, self.track, self.numDistSensors)
-        
+
         percepts += [self.car.speed]
-        
+
         return percepts
 
-    
+
     # selects an action given a state using the state approximator, or choosing randomly with probability epsilon
     def choose_action(self, state, eps=0):
         assert min(*state) >= 0
@@ -95,22 +98,22 @@ class FourierBasisController:
             return action #, expected_returns[args]
         else:
             return randint(0,5)#, 0
-        
+
 
     def update(self):
         # controller logic goes here
 
         if (self.frames_per_action <= self.frames_this_action):
             self.actions_per_episode[-1] += 1
-            
+
             s_new = self.get_state_variables()
 
             # reward = self.reward_this_action
             current_progress = self.car.lapData.getProgress()
-            reward = (current_progress - self.progress_at_start_of_action) * FourierBasisController.lap_progress_reward_strength
+            reward = (current_progress - self.progress_at_start_of_action) * self.lap_progress_reward_strength
             # print(reward)
             self.progress_at_start_of_action = current_progress
-            
+
             if self.train:
                 # Reward the previous state
                 phi_s = self.fourier.phi(self.percepts)
@@ -119,12 +122,14 @@ class FourierBasisController:
                 action_greedy = self.choose_action(s_new, eps=0)
 
                 expected_next_return = phi_s_new @ self.w[action_greedy]
-            
+
                 # td update
-                update = self.step_size * (reward + self.gamma * expected_next_return - (phi_s @ self.w[self.action])) * phi_s
+                td_error = (reward + self.gamma * expected_next_return - (phi_s @ self.w[self.action]))
+                update = self.step_size * td_error * phi_s
+                self.last_td_error = td_error
 
                 self.w[self.action] += update
-                
+
                 self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
             self.current_return += self.current_discount * reward
@@ -139,7 +144,7 @@ class FourierBasisController:
             self.current_discount *= self.gamma
 
         self.frames_this_action += 1
-        
+
         # turn the action [0...5] into car inputs [brk lft, brk cen, brk rit, gas lft, gas cen, gas rit]
         steering = (self.action % 3 - 1) * (self.car.getSteeringThreshold() - 0.01)
         thrust   = -1 if self.action < 3 else 1
@@ -147,43 +152,45 @@ class FourierBasisController:
         self.car.steering =  steering
         self.car.throttle =  thrust if thrust > 0 else 0
         self.car.brake    = -thrust if thrust < 0 else 0
-        
+
         # gets the number of checkpoints passed this frame in case it is used for rewards
         result = self.car.update()
         self.checkpoints_per_episode[-1] += result
 
-        self.reward_this_action += result * FourierBasisController.checkpoint_reward_strength # reward_this_action is currently unused in favor of lap progress
-        
+        self.reward_this_action += result * self.checkpoint_reward_strength # reward_this_action is currently unused in favor of lap progress
+
         # the agent can reset itself in terminal situations
         if self.auto_reset and (self.car.offRoad or (self.car.speed == 0 and thrust == -1 and self.frames_this_action == 1)):
             self.reset_and_punish()
-            
+
             return FourierBasisController.UPDATERESULT_RESET
-        
+
         return FourierBasisController.UPDATERESULT_NOTHING
 
-    
+
     def reset_and_punish(self):
         if self.train:
             # punish the agent
-            reward = FourierBasisController.death_reward_strength
+            reward = self.death_reward_strength
             phi_s = self.fourier.phi(self.percepts)
-            
+
             # td update - the episode has ended so do not include the next estimation
-            update = self.step_size * (reward - (phi_s @ self.w[self.action])) * phi_s
+            td_error = (reward - (phi_s @ self.w[self.action]))
+            update = self.step_size * td_error * phi_s
+            self.last_td_error = td_error
 
             self.w[self.action] += update
 
             self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-        
+
         # reset the car
         self.car = car.Car(self.track.start_position[0], self.track.start_position[1], self.track)
         self.car.dir = self.track.start_direction
         self.car.initLapData()
 
         self.percepts = self.get_state_variables()
-        
-        self.current_return += self.current_discount * (FourierBasisController.death_reward_strength)
+
+        self.current_return += self.current_discount * (self.death_reward_strength)
 
         self.frames_this_action = self.frames_per_action
         self.returns += [self.current_return]
@@ -195,10 +202,10 @@ class FourierBasisController:
         self.actions_per_episode += [0]
         self.checkpoints_per_episode += [0]
 
-    
+
     def update_track(self, track):
         self.track = track
-        
+
         # reset the car
         self.car = car.Car(self.track.start_position[0], self.track.start_position[1], self.track)
         self.car.dir = self.track.start_direction
@@ -219,7 +226,7 @@ def train(fourierAgent, episodes, tracks, save_fname=None, save_every=100):
 
     ep = 0
     tracks_queue = [] # this will get populated in the while loop
-    
+
     with tqdm(total=episodes) as pbar:
         while ep < episodes:
 
@@ -233,7 +240,7 @@ def train(fourierAgent, episodes, tracks, save_fname=None, save_every=100):
                 if len(tracks_queue) == 0:
                     tracks_queue = tracks[:]
                     shuffle(tracks_queue)
-                
+
                 next_track = tracks_queue.pop()
                 fourierAgent.update_track( next_track )
 
@@ -266,12 +273,12 @@ def main():
     plt.xlabel('Episode')
     plt.ylabel('Return')
     plt.show()
-    
+
     plt.plot(agent.actions_per_episode[:-1], 'o')
     plt.xlabel('Episode')
     plt.ylabel('Number of Actions')
     plt.show()
-    
+
     plt.plot(agent.checkpoints_per_episode[:-1], 'o')
     plt.xlabel('Episode')
     plt.ylabel('Number of Checkpoints')
