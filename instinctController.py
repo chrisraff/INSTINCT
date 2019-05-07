@@ -143,6 +143,9 @@ def train(agent):
 
     while True:
         result = agent.update()
+        if agent.car.lapData.nextCheckpoint == agent.car.lapData.numCheckpoints-1:
+            print("wow, it ran a whole track!")
+            return agent
         if result == FourierBasisController.UPDATERESULT_RESET:
             return agent
 
@@ -205,7 +208,7 @@ class Population:
         fitnesses = np.exp(fitnesses) / np.sum(np.exp(fitnesses))
 
         new_pop = []
-        for i in trange(self.pop_size):
+        for i in range(self.pop_size):
             sample_dad = np.random.choice(self.pop, p=fitnesses)
             sample_mom = np.random.choice(self.pop, p=fitnesses)
 
