@@ -275,7 +275,7 @@ class Population:
         # sort theh population by fitness
         self.pop = sorted(self.pop, key=lambda x: np.mean(x.returns), reverse=True)
 
-        fitnesses = [agent.returns[-1] for agent in self.pop]
+        fitnesses = [np.mean(agent.returns) for agent in self.pop] # changed this to means, not most recent
         top1, top2, top3 = fitnesses[:3]
         print("fitness: top: {:.4f} {:.4f} {:.4f} median: {:.4f} avg: {:.4f} min: {:.4f}".format( top1, top2, top3, fitnesses[self.pop_size//2], np.mean(fitnesses), fitnesses[-1] ))
 
