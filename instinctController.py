@@ -375,7 +375,7 @@ def main():
     # pickle the champion
     print("pickling the champion")
     start_time = time()
-    pop_fname = "champion.pickle"
+    pop_fname = "champion{}.pickle".format(time())
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object.get_champion(), f)
     duration2 = time()-start_time
@@ -384,7 +384,7 @@ def main():
     # pickle the population
     print("pickling the population")
     start_time = time()
-    pop_fname = "population.pickle"
+    pop_fname = "population{}.pickle".format(time())
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object, f)
     duration3 = time()-start_time
