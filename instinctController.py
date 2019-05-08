@@ -252,6 +252,8 @@ class Population:
         self.curr_generation = 0
         self.pop = self.make_population()
 
+        self.top_fitnesses_by_generation = []
+
         # load stuff
         print('loading tracks')
         self.tracks = load_tracks(track_glob, tqdm)
@@ -307,10 +309,11 @@ class Population:
 
 
 
-        fitnesses = [np.mean(agent.returns) for agent in self.pop] # changed this to means, not most recent
+        fitnesses = [fitness(agent.returns) for agent in self.pop] # changed this to means, not most recent
         top1, top2, top3 = fitnesses[:3]
         print("fitness: top: {:.4f} {:.4f} {:.4f} median: {:.4f} avg: {:.4f} min: {:.4f}".format( top1, top2, top3, fitnesses[self.pop_size//2], np.mean(fitnesses), fitnesses[-1] ))
 
+        self.top_fitnesses_by_generation += [top1]
 
         self.curr_generation += 1
 
@@ -365,6 +368,9 @@ def main():
     pop_object.evaluate_agents()
     duration1 = time()-start_time
     print("it took {:.3f} seconds to run {} generations with a population of {} with {} elites".format(duration1, training_generations, pop_size, num_elites))
+
+    print('Top fitness of each gen:')
+    print(pop_object.top_fitnesses_by_generation)
 
     # pickle the champion
     print("pickling the champion")
