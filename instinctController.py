@@ -16,17 +16,17 @@ from random import choice
 import argparse
 
 
-
+# default values if you don't use the arguments
 track_glob = 'tracks_all/'
 pickle_champion_every_n_generations = 1
-training_generations = 2#4#30
-pop_size = 4#40
+training_generations = 4#30
+pop_size = 20
 num_elites = 6
 num_purges = 1
 sigma = 12  # parameter for softmax that turns agent fitnesses into breeding probabilities
 mutation_std_decay = 1.0
 min_mutation_std_dev = 0.01
-tracks_per_generation = 2#16#4
+tracks_per_generation = 16
 
 
 parser = argparse.ArgumentParser()
