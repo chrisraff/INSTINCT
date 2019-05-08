@@ -380,45 +380,47 @@ def track_to_track_object(control_points, track_points, left_track, right_track)
     some_track.loop[1] = [(x[0], x[1]) for x in right_track]
 
 
+    def get_sector_center(i):
+        p = \
+        np.array(some_track.checkpoints[i].p[0]) + np.array(some_track.checkpoints[i].p[1]) + \
+        np.array(some_track.checkpoints[i-1].p[0]) + np.array(some_track.checkpoints[i-1].p[1])
+        return p/4
+
+
     # inch forward until there isn't a hairpin turn on the starting line
     for i in range(len(track_points)-checkpoints_very_ahead):
-        start_point = \
-        np.array(some_track.checkpoints[i].p[0])+ np.array(some_track.checkpoints[i].p[1])+ \
-        np.array(some_track.checkpoints[i-1].p[0])+ np.array(some_track.checkpoints[i-1].p[1])
-        start_point /= 4
 
-        ahead_point = \
-        np.array(some_track.checkpoints[checkpoints_ahead+i].p[0])+ np.array(some_track.checkpoints[checkpoints_ahead+i].p[1])+ \
-        np.array(some_track.checkpoints[checkpoints_ahead+i-1].p[0])+ np.array(some_track.checkpoints[checkpoints_ahead+i-1].p[1])
-        ahead_point /= 4
+        angles = []
 
-        very_ahead_point = \
-        np.array(some_track.checkpoints[checkpoints_very_ahead+i].p[0])+ np.array(some_track.checkpoints[checkpoints_very_ahead+i].p[1])+ \
-        np.array(some_track.checkpoints[checkpoints_very_ahead+i-1].p[0])+ np.array(some_track.checkpoints[checkpoints_very_ahead+i-1].p[1])
-        very_ahead_point /= 4
+        start_point = get_sector_center(i)
+        prev_point = start_point
+        prev_angle = 0
 
-        start_direction_vector = \
-        np.array(some_track.checkpoints[i+1].p[0])+ np.array(some_track.checkpoints[i+1].p[1])+ \
-        np.array(some_track.checkpoints[i].p[0])+ np.array(some_track.checkpoints[i].p[1])
-        start_direction_vector /= 4
-        start_direction_vector -= start_point
+        for j in range(i+1, len(track_points)-checkpoints_very_ahead):
 
-        # figure out the turn angle
-        ahead_vector =  start_point - ahead_point
-        ahead_vector = ahead_vector / norm(ahead_vector)
-        very_ahead_vector = very_ahead_point - start_point
-        very_ahead_vector = very_ahead_vector / norm(very_ahead_vector)
+            curr_point = get_sector_center(j)
+            curr_vector = curr_point - prev_point
+            curr_vector /= norm(curr_vector)
 
-        angle = np.arccos(np.clip(np.dot(ahead_vector, very_ahead_vector), -1.0, 1.0))
+            angle = np.arctan2(curr_vector[1], curr_vector[0])
+            angles += [angle-prev_angle]
+            prev_angle = angle
+
+        start_direction = angles[0]
+        angles = np.array(angles)
+
+        # this is the total number of degrees that the car turns at the starting line of the track
+        angle = np.abs(np.sum(angles))
         angle = degrees(angle)
 
-        # print(angle)
-        if angle < hairpin_threshold:
+
+        # print("starting line turn angle: {}".format(angle))
+        if angle > hairpin_threshold:
             # print("{} degrees? that's a hairpin!".format(angle))
             continue
         else:
             some_track.start_position = start_point
-            some_track.start_direction = np.arctan2(start_direction_vector[1], start_direction_vector[0])
+            some_track.start_direction = start_direction
 
             some_track.checkpoints = some_track.checkpoints[i:] + some_track.checkpoints[:i]
             break
