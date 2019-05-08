@@ -17,26 +17,30 @@ import argparse
 
 
 
+track_glob = 'tracks_all/'
+pickle_champion_every_n_generations = 1
+training_generations = 2#4#30
+pop_size = 4#40
+num_elites = 6
+num_purges = 1
+sigma = 12  # parameter for softmax that turns agent fitnesses into breeding probabilities
+mutation_std_decay = 1.0
+min_mutation_std_dev = 0.01
+tracks_per_generation = 2#16#4
+
+
 parser = argparse.ArgumentParser()
 
-# pickle_champion_every_n_generations = 5
-# training_generations = 30
-# pop_size = 80
-# num_elites = 6
-# num_purges = 0
-# sigma = 1
-# mutation_std_decay = 1.0
-# min_mutation_std_dev = 0.01
-parser.add_argument("-d", "--track_glob", type=str, default='tracks_all/')
-parser.add_argument("-c", "--pickle_champion_every_n_generations", type=int, default=5)
-parser.add_argument("-t", "--training_generations", type=int, default=30)
-parser.add_argument("-p", "--pop_size", type=int, default=80)
-parser.add_argument("-e", "--num_elites", type=int, default=6)
-parser.add_argument("-n", "--num_purges", type=int, default=0)
-parser.add_argument("-s", "--sigma", type=float, default=1)
-parser.add_argument("-m", "--mutation_std_decay", type=float, default=1.0)
-parser.add_argument("-i", "--min_mutation_std_dev", type=float, default=0.01)
-parser.add_argument("-g", "--tracks_per_generation", type=int, default=4)
+parser.add_argument("-d", "--track_glob", type=str, default=track_glob)
+parser.add_argument("-c", "--pickle_champion_every_n_generations", type=int, default=pickle_champion_every_n_generations)
+parser.add_argument("-t", "--training_generations", type=int, default=training_generations)
+parser.add_argument("-p", "--pop_size", type=int, default=pop_size)
+parser.add_argument("-e", "--num_elites", type=int, default=num_elites)
+parser.add_argument("-n", "--num_purges", type=int, default=num_purges)
+parser.add_argument("-s", "--sigma", type=float, default=sigma)
+parser.add_argument("-m", "--mutation_std_decay", type=float, default=mutation_std_decay)
+parser.add_argument("-i", "--min_mutation_std_dev", type=float, default=min_mutation_std_dev)
+parser.add_argument("-g", "--tracks_per_generation", type=int, default=tracks_per_generation)
 
 args = parser.parse_args()
 
@@ -46,7 +50,7 @@ training_generations = args.training_generations
 pop_size = args.pop_size
 num_elites = args.num_elites
 num_purges = args.num_purges
-sigma = args.sigma  # softmax hyperparameter
+sigma = args.sigma
 mutation_std_decay = args.mutation_std_decay
 min_mutation_std_dev = args.min_mutation_std_dev
 tracks_per_generation = args.tracks_per_generation
@@ -56,6 +60,13 @@ tracks_per_generation = args.tracks_per_generation
 
 seed(0) # shuffled track order will be the same across runs
 np.random.seed(0) # random actions will be consistent run to run
+
+
+def softmax(expected_returns, s=1):
+    exps = np.exp(s * (expected_returns - np.max(expected_returns)))
+    exps /= np.sum(exps)
+    return exps
+
 
 class DNA():
     def __init__(self, arr):
@@ -84,7 +95,7 @@ class DNA():
         noise = np.random.normal(0, std_dev)
 
         self.arr += noise
-        self.arr = np.abs(self.arr)
+        self.arr = self.arr
 
 
 class InstinctController(FourierBasisController):
@@ -104,6 +115,9 @@ class InstinctController(FourierBasisController):
             'min_mutation_std_dev':min_mutation_std_dev,
             'tracks_per_generation':tracks_per_generation,
         }
+
+        self.actions_so_far = 0
+        self.times_instinct_took_action = 0
 
         if dna is None:
             num_actions = 6
@@ -143,12 +157,15 @@ class InstinctController(FourierBasisController):
             # return randint(0,5)#, 0
 
 
-        # softmax the expected returns
-        expected_returns = np.exp(expected_returns) / np.sum(np.exp(expected_returns))
+        # softmax the experience expected returns
+        expected_returns = softmax(expected_returns)
 
 
-        # TODO maybe do this a different way. like averaging :)
+        # multiply the weights to determine what the instinct part wants to do
         instinct_expected_returns = (state+[1]) @ self.dna.arr
+
+        # softmax the instinct returns
+        instinct_expected_returns = softmax(instinct_expected_returns)
 
 
         expected_returns_with_instincts_accounted_for = np.maximum(expected_returns, instinct_expected_returns)
@@ -165,10 +182,22 @@ class InstinctController(FourierBasisController):
         # # print(expected_returns.reshape((2,3))); print(action)
         # return action #, expected_returns[args]
 
-        if self.train:
-            return instinct_expected_returns.argmax()
-        else:
-            return expected_returns_with_instincts_accounted_for.argmax()
+        if True:
+        # if self.train:
+        #     return instinct_expected_returns.argmax()
+        # else:
+            thing = expected_returns_with_instincts_accounted_for.argmax()
+            instinct_took_action = bool(np.argmax(  [ expected_returns[thing], instinct_expected_returns[thing] ]  ))
+
+            self.actions_so_far += 1
+            self.times_instinct_took_action += int(instinct_took_action)
+
+            if not self.train:
+                # print the percentage of time we follow the advice of the instinct controller
+                print("{:.3%} {}".format(self.times_instinct_took_action/self.actions_so_far, "INSTINCT" if instinct_took_action else "EXPERIENCE"))
+                # print("exp:{} INS:{} max:{}".format(expected_returns, instinct_expected_returns, expected_returns_with_instincts_accounted_for))
+
+            return thing
 
 
     def update(self):
@@ -246,8 +275,6 @@ class Population:
 
         tracks_to_run = [choice(self.tracks) for _ in range(tracks_per_generation)]
 
-        agent_fitness = [0]*self.pop_size
-
         for curr_track in tqdm(tracks_to_run):
 
             # reset the agents and plop them into their latest fun little track!
@@ -265,15 +292,20 @@ class Population:
                 # self.pop = list(tqdm(p.imap(train, self.pop), total=self.pop_size))
                 self.pop = list(p.imap(train, self.pop))  #without tqdm
 
-            for i, agent in enumerate(self.pop):
-                agent_fitness[i] += agent.returns[-1]
+            # reset the experience weights so we don't get an unfair advantage when running more trials
+            agent.w = np.zeros_like(agent.w)
 
-        # for i, agent in enumerate(self.pop):
-        #     agent_fitness[i] /= tracks_per_generation
-        #     agent.returns[-1] = agent_fitness[i]
+        def fitness(x):
+            # return np.mean(x)
+            # return np.min(x)
+            return np.mean([np.mean(x), np.min(x)])
 
-        # sort theh population by fitness
-        self.pop = sorted(self.pop, key=lambda x: np.mean(x.returns), reverse=True)
+
+        # sort the population by fitness
+        self.pop = sorted(self.pop, key=lambda x: fitness(x.returns), reverse=True)
+
+
+
 
         fitnesses = [np.mean(agent.returns) for agent in self.pop] # changed this to means, not most recent
         top1, top2, top3 = fitnesses[:3]
@@ -291,9 +323,9 @@ class Population:
             self.pop = self.pop[:-num_purges]
 
         fitnesses = np.array([agent.returns[-1] for agent in self.pop])
-        fitnesses = np.exp(sigma*fitnesses) / np.sum(np.exp(sigma*fitnesses))
+        fitnesses = softmax(fitnesses, sigma)
 
-        top_agents = sorted(self.pop, key=lambda x: x.returns[-1], reverse=True)[:num_elites]
+        top_agents = self.pop[:num_elites]
 
         new_pop = []
         new_pop += top_agents
