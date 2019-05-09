@@ -110,6 +110,7 @@ def plot_returns(returns, label):
 
 
 if __name__ == "__main__":
+    global mode, fourier_controller, instinct_controller, init_controller
     assert type(fourier_controller) == FourierBasisController, "the instinct controller is actually a "+str(type(instinct_controller))
     assert type(instinct_controller) == InstinctController, "the instinct controller is actually a "+str(type(instinct_controller))
     assert type(init_controller) == InitInstinctController, "the instinct controller is actually a "+str(type(instinct_controller))
@@ -131,21 +132,21 @@ if __name__ == "__main__":
 
 
     print("running the top agents on the test tracks (unthreaded)")
-    # fourier_returns = []
-    # instinct_returns = []
-    # init_returns = []
-    # # for each test track
-    # # for i, track in tqdm(enumerate(tracks)):
-    # for i, track in enumerate(tracks):
-    #     print("track index: "+str(i))
-    #     instinct_returns += [get_return_for_track(track, instinct_controller, reset_experience=True)]
-    #     # fourier_returns += [get_return_for_track(track, fourier_controller, reset_experience=False)]
-    #     # init_returns += [get_return_for_track(track, init_controller, reset_experience=False)]
+    fourier_returns = []
+    instinct_returns = []
+    init_returns = []
+    # for each test track
+    # for i, track in tqdm(enumerate(tracks)):
+    for i, track in enumerate(tracks):
+        print("track index: "+str(i))
+        instinct_returns += [get_return_for_track(track, instinct_controller, reset_experience=True, mode)]
+        # fourier_returns += [get_return_for_track(track, fourier_controller, reset_experience=False, mode)]
+        # init_returns += [get_return_for_track(track, init_controller, reset_experience=False, mode)]
 
-    # all_returns = zip(fourier_returns, instinct_returns, init_returns)
-    # all_returns = sorted(all_returns, key=lambda x: x[0])
-    # # all_returns = sorted(all_returns, key=lambda x: np.mean(x))
-    # fourier_returns, instinct_returns, init_returns = zip(*all_returns)
+    all_returns = zip(fourier_returns, instinct_returns, init_returns)
+    all_returns = sorted(all_returns, key=lambda x: x[0])
+    # all_returns = sorted(all_returns, key=lambda x: np.mean(x))
+    fourier_returns, instinct_returns, init_returns = zip(*all_returns)
 
     print("pickling the results")
     start_time = time()
