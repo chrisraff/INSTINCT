@@ -68,11 +68,14 @@ def softmax(expected_returns, s=1):
     return exps
 
 
-class SkeletonController(FourierBasisController):
+class InitInstinctController(FourierBasisController):
 
-    def __init__(self, track):
+    def __init__(self, track, dna=None):
         super().__init__(track, degree=2)
-        self.dna = DNA(np.zeros_like(self.w))
+        if dna is None:
+            self.dna = DNA(np.zeros_like(self.w))
+        else:
+            self.dna = dna
 
 
     def get_state_variables(self):
@@ -148,7 +151,7 @@ class Population:
         # hyperparameters
         self.training_generations = training_generations
         self.pop_size = pop_size
-        
+
         self.hyperparameters = {
             'track_glob':track_glob,
             'pickle_champion_every_n_generations':pickle_champion_every_n_generations,
@@ -177,7 +180,7 @@ class Population:
         pass
 
     def make_population(self):
-        return [ SkeletonController(Track()) for _ in range(self.pop_size) ]
+        return [ InitInstinctController(Track()) for _ in range(self.pop_size) ]
 
 
     def evaluate_agents(self):
@@ -254,7 +257,7 @@ class Population:
 
             kid_dna = sample_dad.dna.crossover(sample_mom.dna)
             kid_dna.mutate(self.curr_generation)
-            kid = SkeletonController(Track())
+            kid = InitInstinctController(Track(), dna=kid_dna)
 
             new_pop += [ kid ]
 
