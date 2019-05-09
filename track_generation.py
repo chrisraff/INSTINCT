@@ -535,12 +535,21 @@ def main():
     # for track_num in trange(num_tracks_to_generate):
     #     multiprocessing_generate_track(track_num)
 
+
+    generate_test_tracks = False
+    num_test_tracks = 1000
+    if generate_test_tracks:
+        track_range = range(num_tracks_to_generate//2, num_tracks_to_generate//2+num_test_tracks)
+    else:
+        track_range = range(num_tracks_to_generate//2)
+
+
     with Pool(cpu_count()) as p:
         print("computing first half")
-        r = list(tqdm(p.imap(multiprocessing_generate_track, range(num_tracks_to_generate//2)), total=num_tracks_to_generate//2))
+        r = list(tqdm(p.imap(multiprocessing_generate_track, track_range), total=len(track_range)))
 
         print("computing second half")
-        r = list(tqdm(p.imap(multiprocessing_reverse_track, r), total=num_tracks_to_generate//2))
+        r = list(tqdm(p.imap(multiprocessing_reverse_track, r), total=len(r)))
 
 
     # # plot lots of tracks to get a better idea of the results
