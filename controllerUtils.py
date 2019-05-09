@@ -79,4 +79,7 @@ def load_tracks(path, tqdm=lambda some_list: some_list):
             meat = pickle.load(f)
         return meat
     total_tracks = len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
-    return [safe_load(track) for track in tqdm(scandir(path), total=total_tracks) if track.is_file()]
+    all_tracks = [safe_load(track) for track in tqdm(scandir(path), total=total_tracks) if track.is_file()]
+    for track in all_tracks:
+        track.updateTrackLines()
+    return all_tracks

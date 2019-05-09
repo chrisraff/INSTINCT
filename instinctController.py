@@ -141,6 +141,7 @@ class InstinctController(FourierBasisController):
         # return super().choose_action(state, eps)
 
         assert min(*state) >= 0
+        assert float('inf') not in state, str(state)
 
         if random() > eps:
             phi_s = self.fourier.phi(state)
@@ -199,8 +200,9 @@ class InstinctController(FourierBasisController):
 
             if not self.train:
                 # print the percentage of time we follow the advice of the instinct controller
-                print("{:.3%} {}".format(self.times_instinct_took_action/self.actions_so_far, "INSTINCT" if instinct_took_action else "EXPERIENCE"))
+                # print("{:.3%} {}".format(self.times_instinct_took_action/self.actions_so_far, "INSTINCT" if instinct_took_action else "EXPERIENCE"))
                 # print("exp:{} INS:{} max:{}".format(expected_returns, instinct_expected_returns, expected_returns_with_instincts_accounted_for))
+                pass
 
             return thing
 
