@@ -95,11 +95,9 @@ class DNA():
         std_dev = (1-10**(-mutation_std_decay))**curr_generation
         std_dev = max(std_dev, min_mutation_std_dev)
 
-        std_dev *= mutation_std_initial
-
         noise = np.random.normal(0, std_dev, self.arr.shape)
 
-        self.arr += noise
+        self.arr += noise * mutation_std_initial
 
 
 class InstinctController(FourierBasisController):
@@ -382,6 +380,8 @@ def main():
 
     print('Top fitness of each gen:')
     print(pop_object.top_fitnesses_by_generation)
+    print('Avg fitness of each gen:')
+    print(pop_object.avg_fitnesses_by_generation)
 
     # pickle the champion
     print("pickling the champion")
