@@ -23,34 +23,6 @@ record the return for every test track
 
 # if the agent runs this many laps, stop the simulation so it doesn't run forever
 max_laps_per_track = 2
-# mode = "Checkpoint Percentage"
-# mode = "Total Checkpoints"
-mode = "Return"
-print("plotting points in '{}' mode".format(mode))
-
-# load fourier controller
-print("loading fourier controller")
-fourier_controller = pickle.load(open('fourierController.pickle', 'rb'))
-
-# load instinct controller
-print("loading instinct controller")
-# instinct_controller = pickle.load(open('awesome_champion.pickle', 'rb'))
-# instinct_controller = pickle.load(open('champion1557358749.1494272.pickle', 'rb'))
-# instinct_controller = pickle.load(open('champion1557370035.5170279.pickle', 'rb'))
-# instinct_controller = pickle.load(open('champion.pickle', 'rb'))
-instinct_controller = pickle.load(open('championInstinct1557430173.3814373.pickle', 'rb')) #chris initial guess good controller
-instinct_controller.actions_so_far = 0
-instinct_controller.times_instinct_took_action = 0
-
-# load init controller
-print("loading init controller")
-init_controller = pickle.load(open('champion1557406890.5402772.pickle', 'rb'))
-
-# load all test tracks
-print('loading tracks')
-tracks_dir = 'tracks_test' #test
-tracks = load_tracks(tracks_dir, tqdm)[:2]
-
 
 
 def get_return_for_track(track, agent, reset_experience, mode):
@@ -109,11 +81,38 @@ def plot_returns(returns, label):
 
 
 if __name__ == "__main__":
+    # mode = "Checkpoint Percentage"
+    # mode = "Total Checkpoints"
+    mode = "Return"
+    print("plotting points in '{}' mode".format(mode))
+
+    # load fourier controller
+    print("loading fourier controller")
+    fourier_controller = pickle.load(open('fourierController.pickle', 'rb'))
+
+    # load instinct controller
+    print("loading instinct controller")
+    # instinct_controller = pickle.load(open('awesome_champion.pickle', 'rb'))
+    # instinct_controller = pickle.load(open('champion1557358749.1494272.pickle', 'rb'))
+    # instinct_controller = pickle.load(open('champion1557370035.5170279.pickle', 'rb'))
+    # instinct_controller = pickle.load(open('champion.pickle', 'rb'))
+    instinct_controller = pickle.load(open('championInstinct1557430173.3814373.pickle', 'rb')) #chris initial guess good controller
+    instinct_controller.actions_so_far = 0
+    instinct_controller.times_instinct_took_action = 0
+
+    # load init controller
+    print("loading init controller")
+    init_controller = pickle.load(open('champion1557406890.5402772.pickle', 'rb'))
+
     assert type(fourier_controller) == FourierBasisController, "the instinct controller is actually a "+str(type(instinct_controller))
     assert type(instinct_controller) == InstinctController, "the instinct controller is actually a "+str(type(instinct_controller))
     assert type(init_controller) == InitInstinctController, "the instinct controller is actually a "+str(type(instinct_controller))
 
 
+    # load all test tracks
+    print('loading tracks')
+    tracks_dir = 'tracks_test' #test
+    tracks = load_tracks(tracks_dir, tqdm)
 
     print("running the top agents on the test tracks (threaded)")
     num_tracks = len(tracks)
