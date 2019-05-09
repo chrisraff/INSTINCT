@@ -295,7 +295,8 @@ class Population:
                 self.pop = list(p.imap(train, self.pop))  #without tqdm
 
             # reset the experience weights so we don't get an unfair advantage when running more trials
-            agent.w = np.zeros_like(agent.w)
+            for agent in self.pop:
+                agent.w = np.zeros_like(agent.w)
 
         def fitness(x):
             # return np.mean(x)
