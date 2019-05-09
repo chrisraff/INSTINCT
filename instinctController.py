@@ -335,7 +335,7 @@ class Population:
         if num_purges > 0:
             self.pop = self.pop[:-num_purges]
 
-        fitnesses = np.array([agent.returns[-1] for agent in self.pop])
+        fitnesses = np.array([np.mean([np.mean(agent.returns), np.min(agent.returns)]) for agent in self.pop])
         fitnesses = softmax(fitnesses, sigma)
 
         top_agents = self.pop[:num_elites]
