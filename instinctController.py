@@ -98,6 +98,7 @@ class DNA():
         noise = np.random.normal(0, std_dev, self.arr.shape)
 
         self.arr += noise * mutation_std_initial
+        self.arr = np.clip(self.arr, 0, 1)
 
 
 class InstinctController(FourierBasisController):
@@ -125,7 +126,7 @@ class InstinctController(FourierBasisController):
         if dna is None:
             num_actions = 6
             num_percepts = self.numDistSensors+1+1  # plus one for speed, one for bias
-            dna_w = np.zeros((num_percepts, num_actions))
+            dna_w = np.random.random((num_percepts, num_actions))
             self.dna = DNA(dna_w)
         else:
             self.dna = dna
