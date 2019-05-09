@@ -25,6 +25,7 @@ num_elites = 6
 num_purges = 1
 sigma = 12  # parameter for softmax that turns agent fitnesses into breeding probabilities
 mutation_std_decay = 1.0
+mutation_std_initial = 1e-3
 min_mutation_std_dev = 0.01
 tracks_per_generation = 8
 
@@ -39,6 +40,7 @@ parser.add_argument("-e", "--num_elites", type=int, default=num_elites)
 parser.add_argument("-n", "--num_purges", type=int, default=num_purges)
 parser.add_argument("-s", "--sigma", type=float, default=sigma)
 parser.add_argument("-m", "--mutation_std_decay", type=float, default=mutation_std_decay)
+parser.add_argument("-l", "--mutation_std_initial", type=float, default=mutation_std_initial)
 parser.add_argument("-i", "--min_mutation_std_dev", type=float, default=min_mutation_std_dev)
 parser.add_argument("-g", "--tracks_per_generation", type=int, default=tracks_per_generation)
 
@@ -52,6 +54,7 @@ num_elites = args.num_elites
 num_purges = args.num_purges
 sigma = args.sigma
 mutation_std_decay = args.mutation_std_decay
+mutation_std_initial = args.mutation_std_initial
 min_mutation_std_dev = args.min_mutation_std_dev
 tracks_per_generation = args.tracks_per_generation
 
@@ -92,6 +95,8 @@ class DNA():
         std_dev = (1-10**(-mutation_std_decay))**curr_generation
         std_dev = max(std_dev, min_mutation_std_dev)
 
+        std_dev *= mutation_std_initial
+
         noise = np.random.normal(0, std_dev, self.arr.shape)
 
         self.arr += noise
@@ -111,6 +116,7 @@ class InstinctController(FourierBasisController):
             'num_purges':num_purges,
             'sigma':sigma,
             'mutation_std_decay':mutation_std_decay,
+            'mutation_std_initial':mutation_std_initial,
             'min_mutation_std_dev':min_mutation_std_dev,
             'tracks_per_generation':tracks_per_generation,
         }
@@ -244,6 +250,7 @@ class Population:
             'num_purges':num_purges,
             'sigma':sigma,
             'mutation_std_decay':mutation_std_decay,
+            'mutation_std_initial':mutation_std_initial,
             'min_mutation_std_dev':min_mutation_std_dev,
             'tracks_per_generation':tracks_per_generation,
         }
@@ -252,6 +259,7 @@ class Population:
         self.pop = self.make_population()
 
         self.top_fitnesses_by_generation = []
+        self.avg_fitnesses_by_generation = []
 
         # load stuff
         print('loading tracks')
@@ -309,11 +317,12 @@ class Population:
 
 
 
-        fitnesses = [fitness(agent.returns) for agent in self.pop] # changed this to means, not most recent
+        fitnesses = [fitness(agent.returns) for agent in self.pop]
         top1, top2, top3 = fitnesses[:3]
         print("fitness: top: {:.4f} {:.4f} {:.4f} median: {:.4f} avg: {:.4f} min: {:.4f}".format( top1, top2, top3, fitnesses[self.pop_size//2], np.mean(fitnesses), fitnesses[-1] ))
 
         self.top_fitnesses_by_generation += [top1]
+        self.avg_fitnesses_by_generation += [np.mean(fitnesses)]
 
         self.curr_generation += 1
 
