@@ -68,6 +68,32 @@ def softmax(expected_returns, s=1):
     return exps
 
 
+class SkeletonController(FourierBasisController):
+
+    def __init__(self, track):
+        super().__init__(track, degree=2)
+        self.dna = DNA(np.zeros_like(self.w))
+
+
+    def get_state_variables(self):
+        return super().get_state_variables()
+
+
+    def choose_action(self, state, eps=0):
+        return super().choose_action(state, eps)
+
+
+    def update(self):
+        return super().update()
+
+
+    def reset_and_punish(self):
+        super().reset_and_punish()
+
+
+    def update_track(self, track):
+        super().update_track(track)
+
 class DNA():
     def __init__(self, arr):
         self.arr = arr
@@ -138,7 +164,6 @@ class Population:
 
         self.curr_generation = 0
         self.pop = self.make_population()
-        self.dna_obj = [DNA(np.zeros_like(self.pop[0].w)) for _ in range(self.pop_size)]
         self.top_fitnesses_by_generation = []
 
         # load stuff
@@ -152,7 +177,7 @@ class Population:
         pass
 
     def make_population(self):
-        return [ FourierBasisController(Track()) for _ in range(self.pop_size) ]
+        return [ SkeletonController(Track()) for _ in range(self.pop_size) ]
 
 
     def evaluate_agents(self):
@@ -166,10 +191,13 @@ class Population:
         for curr_track in tqdm(tracks_to_run):
 
             # reset the agents and plop them into their latest fun little track!
+            i = 0
             for agent in self.pop:
+                i +=1
                 # curr_track = choice(self.tracks)\
                 # if Rather, a separate “experience initialization” matrix will be kept for when the successful agents are used to produce the next population.:
-                agent.w = agent.dna_obj.arr
+                # This is completly a hack fix later:
+                agent.w = agent.dna.arr
                 agent.update_track( curr_track )
                 agent.epsilon = 0.001
 
@@ -226,7 +254,7 @@ class Population:
 
             kid_dna = sample_dad.dna.crossover(sample_mom.dna)
             kid_dna.mutate(self.curr_generation)
-            kid = FourierBasisController(Track())
+            kid = SkeletonController(Track())
 
             new_pop += [ kid ]
 
