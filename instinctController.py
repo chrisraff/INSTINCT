@@ -384,7 +384,7 @@ def main():
     # pickle the champion
     print("pickling the champion")
     start_time = time()
-    pop_fname = "champion{}.pickle".format(time())
+    pop_fname = "championInstinct{}.pickle".format(time())
     with open(pop_fname , 'wb') as f:
         pickle.dump(pop_object.get_champion(), f)
     duration2 = time()-start_time
