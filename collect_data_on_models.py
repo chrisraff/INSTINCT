@@ -26,7 +26,7 @@ max_laps_per_track = 2
 mode = "Checkpoint Percentage"
 # mode = "Total Checkpoints"
 # mode = "Return"
-
+print("plotting points in '{}' mode".format(mode))
 
 # load fourier controller
 print("loading fourier controller")
@@ -84,8 +84,6 @@ def get_return_for_track(track, agent, reset_experience, mode):
         # checkpoints_passed = agent.checkpoints_per_episode[-1]
         checkpoints_passed = agent.checkpoints_per_episode[-2]
         total_checkpoints_that_could_be_passed = max_laps_per_track * len(track.checkpoints)
-        print("agent.checkpoints_per_episode", agent.checkpoints_per_episode)
-        print("total_checkpoints_that_could_be_passed", total_checkpoints_that_could_be_passed)
         return checkpoints_passed / total_checkpoints_that_could_be_passed
     elif mode == "Total Checkpoints":
         return checkpoints_passed
