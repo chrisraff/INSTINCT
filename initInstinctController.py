@@ -135,10 +135,9 @@ class DNA():
         std_dev = (1-10**(-mutation_std_decay))**curr_generation
         std_dev = max(std_dev, min_mutation_std_dev)
 
-        noise = np.random.normal(0, std_dev)
+        noise = np.random.normal(0, std_dev, self.arr.shape)
 
         self.arr += noise
-        self.arr = self.arr
 
 
 

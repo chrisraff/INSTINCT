@@ -19,14 +19,14 @@ import argparse
 # default values if you don't use the arguments
 track_glob = 'tracks_all/'
 pickle_champion_every_n_generations = 1
-training_generations = 4#30
+training_generations = 20#30
 pop_size = 20
 num_elites = 6
 num_purges = 1
 sigma = 12  # parameter for softmax that turns agent fitnesses into breeding probabilities
 mutation_std_decay = 1.0
 min_mutation_std_dev = 0.01
-tracks_per_generation = 16
+tracks_per_generation = 8
 
 
 parser = argparse.ArgumentParser()
@@ -92,10 +92,9 @@ class DNA():
         std_dev = (1-10**(-mutation_std_decay))**curr_generation
         std_dev = max(std_dev, min_mutation_std_dev)
 
-        noise = np.random.normal(0, std_dev)
+        noise = np.random.normal(0, std_dev, self.arr.shape)
 
         self.arr += noise
-        self.arr = self.arr
 
 
 class InstinctController(FourierBasisController):
