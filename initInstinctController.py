@@ -186,9 +186,9 @@ class Population:
         print('loading tracks')
         self.tracks = load_tracks(track_glob, tqdm)
 
-        print('building track lines')
-        for track in tqdm(self.tracks):
-            track.updateTrackLines()
+        # print('building track lines')
+        # for track in tqdm(self.tracks):
+        #     track.updateTrackLines()
 
         pass
 

@@ -259,9 +259,9 @@ def main():
     print('loading tracks')
     tracks = load_tracks(track_glob, tqdm)
 
-    print('building track lines')
-    for track in tqdm(tracks):
-        track.updateTrackLines()
+    # print('building track lines')
+    # for track in tqdm(tracks):
+    #     track.updateTrackLines()
 
     print('training agent')
 
