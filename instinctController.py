@@ -23,9 +23,9 @@ training_generations = 20#30
 pop_size = 20
 num_elites = 6
 num_purges = 1
-sigma = 12  # parameter for softmax that turns agent fitnesses into breeding probabilities
+sigma = 1  # parameter for softmax that turns agent fitnesses into breeding probabilities
 mutation_std_decay = 1.0
-mutation_std_initial = 1e-3
+mutation_std_initial = 1e-2
 min_mutation_std_dev = 0.01
 tracks_per_generation = 8
 
@@ -77,16 +77,16 @@ class DNA():
 
     def crossover(self, other_dna):
         # swap some parts
-        my_w = self.arr
-        your_w = other_dna.arr
+        new_w = self.arr.copy()
+        your_w = other_dna.arr.copy()
 
         a = np.random.random( self.arr.shape ) > 0.5
 
-        my_w *= a
-        my_w += (1-a)*your_w
+        new_w *= a
+        new_w += (1-a)*your_w
 
-        self.arr = my_w
-        return other_dna
+        # self.arr = new_w
+        return DNA(new_w)
 
     def mutate(self, curr_generation):
         # hit with some guassians
@@ -199,7 +199,7 @@ class InstinctController(FourierBasisController):
 
             if not self.train:
                 # print the percentage of time we follow the advice of the instinct controller
-                # print("{:.3%} {}".format(self.times_instinct_took_action/self.actions_so_far, "INSTINCT" if instinct_took_action else "EXPERIENCE"))
+                print("{:.3%} {}".format(self.times_instinct_took_action/self.actions_so_far, "INSTINCT" if instinct_took_action else "EXPERIENCE"))
                 # print("exp:{} INS:{} max:{}".format(expected_returns, instinct_expected_returns, expected_returns_with_instincts_accounted_for))
                 pass
 
@@ -216,7 +216,7 @@ class InstinctController(FourierBasisController):
 
     def update_track(self, track):
         super().update_track(track)
-
+        self.w = np.zeros_like(self.w)
 
 
 def train(agent):
@@ -331,6 +331,8 @@ class Population:
     def breed_next_generation_agents(self):
         print("BREEDING gen {}/{}".format(self.curr_generation+1, self.training_generations))
 
+        self.pop = sorted(self.pop, key=lambda x: np.mean([np.mean(x.returns), np.min(x.returns)]), reverse=True)
+
         # TODO remove the `num_purges` worst performing agents
         if num_purges > 0:
             self.pop = self.pop[:-num_purges]
@@ -342,6 +344,9 @@ class Population:
 
         new_pop = []
         new_pop += top_agents
+
+        assert len(new_pop) == num_elites
+
         for i in range(self.pop_size-num_elites):
             sample_dad = np.random.choice(self.pop, p=fitnesses)
             sample_mom = np.random.choice(self.pop, p=fitnesses)
@@ -355,7 +360,7 @@ class Population:
         self.pop = new_pop
 
     def get_champion(self):
-        return max(self.pop, key=lambda x: x.returns[-1])
+        return max(self.pop, key=lambda x: np.mean([np.mean(x.returns), np.min(x.returns)]))
 
 
 def main():
