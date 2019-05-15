@@ -11,6 +11,8 @@ from track import Track, Line
 import copy
 
 
+tracks_dir = 'tracks'
+
 np.random.seed(6)
 # np.random.seed(5286)  #super hairy hairpin
 # np.random.seed(2114)  #hairpin start
@@ -479,14 +481,14 @@ def make_track_object():
 def multiprocessing_generate_track(track_num):
     np.random.seed(track_num)
     some_track = make_track_object()
-    pickle.dump( some_track, open( 'tracks/track{:05d}.pickle'.format(track_num), 'wb' ) )
+    pickle.dump( some_track, open( '{}/track{:05d}.pickle'.format(tracks_dir, track_num), 'wb' ) )
     return track_num, some_track
 
 
 def multiprocessing_reverse_track(data):
     track_num, track_object = data
     some_track = reverse_track_object(track_object)
-    pickle.dump( some_track, open( 'tracks/track{:05d}_flip.pickle'.format(track_num), 'wb' ) )
+    pickle.dump( some_track, open( '{}/track{:05d}_flip.pickle'.format(tracks_dir, track_num), 'wb' ) )
     return some_track
 
 
