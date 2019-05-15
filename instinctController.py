@@ -24,9 +24,10 @@ pop_size = 20
 num_elites = 6
 num_purges = 1
 sigma = 1  # parameter for softmax that turns agent fitnesses into breeding probabilities
-mutation_std_decay = 1.0
 mutation_std_initial = 1e-2
 min_mutation_std_dev = 0.01
+# automatically tune the mutation_std_decay to converge at the last generation
+mutation_std_decay = np.log10(1-min_mutation_std_dev**(1/training_generations))
 tracks_per_generation = 8
 
 
@@ -39,9 +40,9 @@ parser.add_argument("-p", "--pop_size", type=int, default=pop_size)
 parser.add_argument("-e", "--num_elites", type=int, default=num_elites)
 parser.add_argument("-n", "--num_purges", type=int, default=num_purges)
 parser.add_argument("-s", "--sigma", type=float, default=sigma)
-parser.add_argument("-m", "--mutation_std_decay", type=float, default=mutation_std_decay)
 parser.add_argument("-l", "--mutation_std_initial", type=float, default=mutation_std_initial)
 parser.add_argument("-i", "--min_mutation_std_dev", type=float, default=min_mutation_std_dev)
+parser.add_argument("-m", "--mutation_std_decay", type=float, default=mutation_std_decay)
 parser.add_argument("-g", "--tracks_per_generation", type=int, default=tracks_per_generation)
 
 args = parser.parse_args()
@@ -53,9 +54,9 @@ pop_size = args.pop_size
 num_elites = args.num_elites
 num_purges = args.num_purges
 sigma = args.sigma
-mutation_std_decay = args.mutation_std_decay
 mutation_std_initial = args.mutation_std_initial
 min_mutation_std_dev = args.min_mutation_std_dev
+mutation_std_decay = args.mutation_std_decay
 tracks_per_generation = args.tracks_per_generation
 
 
